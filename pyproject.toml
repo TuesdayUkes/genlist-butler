@@ -43,7 +43,7 @@ Repository = "https://github.com/TuesdayUkes/genlist-butler"
 Documentation = "https://github.com/TuesdayUkes/genlist-butler#readme"
 
 [project.scripts]
-genlist-butler = "genlist_butler.cli:main"
+genlist = "genlist_butler.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

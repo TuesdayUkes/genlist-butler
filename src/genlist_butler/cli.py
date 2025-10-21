@@ -325,7 +325,7 @@ h2 {
 
 
 def main():
-    """Main entry point for genlist-butler CLI"""
+    """Main entry point for genlist CLI"""
     parser = argparse.ArgumentParser(
         description="Generate HTML catalogs from music notation files with git-based version tracking"
     )

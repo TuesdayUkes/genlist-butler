@@ -1,5 +1,5 @@
 @echo off
-REM Test script for genlist-butler package (Windows)
+REM Test script for genlist package (Windows)
 
 setlocal enabledelayedexpansion
 
@@ -26,7 +26,7 @@ call test_venv\Scripts\activate.bat
 echo [+] Virtual environment created and activated
 
 REM Test 3: Install the package in development mode
-echo [*] Installing genlist-butler in development mode...
+echo [*] Installing genlist in development mode...
 pip install -e . >nul 2>&1
 if errorlevel 1 (
     echo [X] Package installation failed
@@ -36,18 +36,18 @@ if errorlevel 1 (
 echo [+] Package installed successfully
 
 REM Test 4: Check if command is available
-echo [*] Checking if genlist-butler command is available...
-where genlist-butler >nul 2>&1
+echo [*] Checking if genlist command is available...
+where genlist >nul 2>&1
 if errorlevel 1 (
-    echo [X] genlist-butler command not found
+    echo [X] genlist command not found
     deactivate
     exit /b 1
 )
-echo [+] genlist-butler command found
+echo [+] genlist command found
 
 REM Test 5: Test --help flag
 echo [*] Testing --help flag...
-genlist-butler --help >nul 2>&1
+genlist --help >nul 2>&1
 if errorlevel 1 (
     echo [X] --help flag failed
     deactivate
@@ -63,8 +63,8 @@ echo # Another Song > test_music\another_song.cho
 echo [+] Test music files created
 
 REM Test 7: Run the actual command
-echo [*] Running genlist-butler on test music...
-genlist-butler test_music test_output.html --no-intro
+echo [*] Running genlist on test music...
+genlist test_music test_output.html --no-intro
 if not exist test_output.html (
     echo [X] HTML output file not created
     deactivate
@@ -89,7 +89,7 @@ echo [+] HTML contains expected song titles
 
 REM Test 8: Test filter options
 echo [*] Testing filter options...
-genlist-butler test_music test_output2.html --filter none --no-intro >nul 2>&1
+genlist test_music test_output2.html --filter none --no-intro >nul 2>&1
 if not exist test_output2.html (
     echo [X] Filter option failed
     deactivate
@@ -117,7 +117,7 @@ echo ================================
 echo.
 echo Next steps:
 echo   1. Test with real music folder:
-echo      genlist-butler ..\TUG\music test.html
+echo      genlist ..\TUG\music test.html
 echo.
 echo   2. Build the package:
 echo      python -m build

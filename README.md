@@ -1,8 +1,8 @@
 # GenList Butler
 
-[![Tests](https://github.com/TuesdayUkes/genlist-butler/actions/workflows/test.yml/badge.svg)](https://github.com/TuesdayUkes/genlist-butler/actions/workflows/test.yml)
-[![PyPI version](https://badge.fury.io/py/genlist-butler.svg)](https://badge.fury.io/py/genlist-butler)
-[![Python versions](https://img.shields.io/pypi/pyversions/genlist-butler.svg)](https://pypi.org/project/genlist-butler/)
+[![Tests](https://github.com/TuesdayUkes/genlist/actions/workflows/test.yml/badge.svg)](https://github.com/TuesdayUkes/genlist/actions/workflows/test.yml)
+[![PyPI version](https://badge.fury.io/py/genlist.svg)](https://badge.fury.io/py/genlist)
+[![Python versions](https://img.shields.io/pypi/pyversions/genlist.svg)](https://pypi.org/project/genlist/)
 
 A command-line tool for generating HTML music archives from ChordPro files, PDFs, and other music notation files. Originally created for the Tuesday Ukulele Group, this tool scans a directory tree of music files and generates a searchable, filterable HTML catalog.
 
@@ -26,13 +26,13 @@ A command-line tool for generating HTML music archives from ChordPro files, PDFs
 Install using pipx (recommended):
 
 ```bash
-pipx install genlist-butler
+pipx install genlist
 ```
 
 Or using pip:
 
 ```bash
-pip install genlist-butler
+pip install genlist
 ```
 
 ## Usage
@@ -40,7 +40,7 @@ pip install genlist-butler
 Basic usage:
 
 ```bash
-genlist-butler <music_folder> <output_file>
+genlist <music_folder> <output_file>
 ```
 
 ### Examples
@@ -48,25 +48,25 @@ genlist-butler <music_folder> <output_file>
 Generate a catalog with default settings (newest versions only):
 
 ```bash
-genlist-butler ./music index.html
+genlist ./music index.html
 ```
 
 Show all file versions:
 
 ```bash
-genlist-butler ./music index.html --filter none
+genlist ./music index.html --filter none
 ```
 
 Hide only files marked with `.hide` extension:
 
 ```bash
-genlist-butler ./music index.html --filter hidden
+genlist ./music index.html --filter hidden
 ```
 
 Generate PDFs from ChordPro files before cataloging:
 
 ```bash
-genlist-butler ./music index.html --genPDF
+genlist ./music index.html --genPDF
 ```
 
 ### Options
@@ -93,7 +93,7 @@ GenList Butler uses special marker files:
 GenList-Butler includes a beautiful, professional HTML template out of the box (Tuesday Ukes' styling). However, you can customize it:
 
 1. Create your own `HTMLheader.txt` file in your working directory
-2. Run genlist-butler from that directory
+2. Run genlist from that directory
 3. Your custom header will be used instead of the default
 
 The generated HTML will use your custom styling while maintaining all the interactive search/filter functionality.
@@ -124,8 +124,8 @@ To contribute or modify:
 
 ```bash
 # Clone the repository
-git clone https://github.com/TuesdayUkes/genlist-butler.git
-cd genlist-butler
+git clone https://github.com/TuesdayUkes/genlist.git
+cd genlist
 
 # Install in development mode
 pip install -e ".[dev]"

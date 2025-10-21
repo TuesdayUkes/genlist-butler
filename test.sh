@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test script for genlist-butler package
+# Test script for genlist package
 
 set -e  # Exit on error
 
@@ -46,7 +46,7 @@ source test_venv/bin/activate || source test_venv/Scripts/activate
 print_success "Virtual environment created and activated"
 
 # Test 3: Install the package in development mode
-print_info "Installing genlist-butler in development mode..."
+print_info "Installing genlist in development mode..."
 pip install -e . > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     print_success "Package installed successfully"
@@ -57,18 +57,18 @@ else
 fi
 
 # Test 4: Check if command is available
-print_info "Checking if genlist-butler command is available..."
-if command -v genlist-butler &> /dev/null; then
-    print_success "genlist-butler command found"
+print_info "Checking if genlist command is available..."
+if command -v genlist &> /dev/null; then
+    print_success "genlist command found"
 else
-    print_error "genlist-butler command not found"
+    print_error "genlist command not found"
     deactivate
     exit 1
 fi
 
 # Test 5: Test --help flag
 print_info "Testing --help flag..."
-genlist-butler --help > /dev/null 2>&1
+genlist --help > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     print_success "--help flag works"
 else
@@ -85,8 +85,8 @@ echo "# Another Song" > test_music/another_song.cho
 print_success "Test music files created"
 
 # Test 7: Run the actual command
-print_info "Running genlist-butler on test music..."
-genlist-butler test_music test_output.html --no-intro
+print_info "Running genlist on test music..."
+genlist test_music test_output.html --no-intro
 if [ -f "test_output.html" ]; then
     print_success "HTML output file created"
     
@@ -106,7 +106,7 @@ fi
 
 # Test 8: Test filter options
 print_info "Testing filter options..."
-genlist-butler test_music test_output2.html --filter none --no-intro > /dev/null 2>&1
+genlist test_music test_output2.html --filter none --no-intro > /dev/null 2>&1
 if [ -f "test_output2.html" ]; then
     print_success "Filter option works"
 else
@@ -134,7 +134,7 @@ echo "================================"
 echo
 echo "Next steps:"
 echo "  1. Test with real music folder:"
-echo "     genlist-butler ../TUG/music test.html"
+echo "     genlist ../TUG/music test.html"
 echo
 echo "  2. Build the package:"
 echo "     python -m build"

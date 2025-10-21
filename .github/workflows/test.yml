@@ -30,9 +30,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e .
 
-    - name: Check if genlist-butler command is available
+    - name: Check if genlist command is available
       run: |
-        genlist-butler --help
+        genlist --help
 
     - name: Create test music files
       shell: bash
@@ -43,7 +43,7 @@ jobs:
 
     - name: Run genlist-butler
       run: |
-        genlist-butler test_music test_output.html --no-intro
+        genlist test_music test_output.html --no-intro
 
     - name: Verify output
       shell: bash
@@ -64,8 +64,8 @@ jobs:
 
     - name: Test with different filter options
       run: |
-        genlist-butler test_music test_output2.html --filter none --no-intro
-        genlist-butler test_music test_output3.html --filter hidden --no-intro
+        genlist test_music test_output2.html --filter none --no-intro
+        genlist test_music test_output3.html --filter hidden --no-intro
 
     - name: Check package version
       run: |
