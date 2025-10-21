@@ -32,7 +32,7 @@ if command -v python3 &> /dev/null; then
     PYTHON_VERSION=$(python3 --version)
     print_success "Python found: $PYTHON_VERSION"
 else
-    print_error "Python 3 not found. Please install Python 3.8 or higher."
+    print_error "Python 3 not found. Please install Python 3.12 or higher."
     exit 1
 fi
 

@@ -16,6 +16,11 @@ A command-line tool for generating HTML music archives from ChordPro files, PDFs
 - 🎨 **Beautiful Styling**: Includes Tuesday Ukes' professional HTML template - no configuration needed!
 - ⚡ **Fast**: Optimized git operations for quick catalog generation
 
+## Requirements
+
+- Python 3.12 or later
+- Git (for version tracking features)
+
 ## Installation
 
 Install using pipx (recommended):

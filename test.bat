@@ -12,7 +12,7 @@ REM Test 1: Check if Python is available
 echo [*] Checking Python installation...
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [X] Python not found. Please install Python 3.8 or higher.
+    echo [X] Python not found. Please install Python 3.12 or higher.
     exit /b 1
 )
 for /f "tokens=*" %%i in ('python --version') do set PYTHON_VERSION=%%i
