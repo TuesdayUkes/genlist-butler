@@ -1,5 +1,9 @@
 # GenList Butler
 
+[![Tests](https://github.com/TuesdayUkes/genlist-butler/actions/workflows/test.yml/badge.svg)](https://github.com/TuesdayUkes/genlist-butler/actions/workflows/test.yml)
+[![PyPI version](https://badge.fury.io/py/genlist-butler.svg)](https://badge.fury.io/py/genlist-butler)
+[![Python versions](https://img.shields.io/pypi/pyversions/genlist-butler.svg)](https://pypi.org/project/genlist-butler/)
+
 A command-line tool for generating HTML music archives from ChordPro files, PDFs, and other music notation files. Originally created for the Tuesday Ukulele Group, this tool scans a directory tree of music files and generates a searchable, filterable HTML catalog.
 
 ## Features
