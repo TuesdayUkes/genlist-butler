@@ -19,11 +19,24 @@ This repository includes two GitHub Actions workflows:
 
 **Triggers:** 
 - Automatically when you publish a GitHub Release
-- Manually via workflow_dispatch
 
 **What it does:**
 - Builds the package distribution (wheel and source)
 - Publishes to both TestPyPI and PyPI using Trusted Publishing
+
+## 3. Release Workflow (`.github/workflows/release.yml`)
+
+**Triggers:** 
+- Manually via workflow_dispatch (GitHub Actions UI)
+
+**What it does:**
+- Auto-increments version number (patch, minor, or major)
+- Updates `pyproject.toml` and `__init__.py`
+- Commits and pushes version changes
+- Creates a git tag
+- Creates a GitHub Release (which triggers the publish workflow)
+
+**This is the recommended way to create releases!**
 
 ### Setup for Publishing:
 
@@ -54,11 +67,30 @@ This workflow uses PyPI's [Trusted Publishing](https://docs.pypi.org/trusted-pub
    - **Name:** `testpypi`
      - No protection needed (for testing)
 
-#### Step 3: Publish a Release
+#### Step 3: Create a Release (Recommended: Use the Release Workflow)
 
-When you're ready to publish:
+The easiest way to create a release with automatic version bumping:
 
-1. **Update the version** in `pyproject.toml`
+1. **Go to Actions → Bump Version and Release → Run workflow**
+2. **Select the version bump type:**
+   - **patch** (1.0.0 → 1.0.1) - Bug fixes, small changes
+   - **minor** (1.0.0 → 1.1.0) - New features, backward compatible
+   - **major** (1.0.0 → 2.0.0) - Breaking changes
+3. **Click "Run workflow"**
+
+The workflow will automatically:
+- Increment the version number
+- Update `pyproject.toml` and `__init__.py`
+- Commit and push the changes
+- Create a git tag
+- Create a GitHub Release
+- Trigger the publish workflow to upload to PyPI
+
+#### Alternative: Manual Release
+
+If you prefer to manually control the version:
+
+1. **Update the version** in `pyproject.toml` and `src/genlist_butler/__init__.py`
 2. **Commit and push** your changes
 3. **Create a GitHub Release:**
    - Go to: `https://github.com/TuesdayUkes/genlist-butler/releases/new`
@@ -70,12 +102,6 @@ When you're ready to publish:
 4. **Watch the workflow:**
    - Go to Actions tab to see the publish workflow run
    - It will automatically publish to both TestPyPI and PyPI
-
-#### Alternative: Manual Trigger
-
-You can also manually trigger the publish workflow:
-1. Go to Actions → Publish to PyPI → Run workflow
-2. This is useful for testing or republishing
 
 ## Testing the Workflows Locally
 
@@ -95,6 +121,7 @@ python -m build
 Check workflow status at:
 - All workflows: `https://github.com/TuesdayUkes/genlist-butler/actions`
 - Tests: `https://github.com/TuesdayUkes/genlist-butler/actions/workflows/test.yml`
+- Release: `https://github.com/TuesdayUkes/genlist-butler/actions/workflows/release.yml`
 - Publishing: `https://github.com/TuesdayUkes/genlist-butler/actions/workflows/publish.yml`
 
 ## Troubleshooting
