@@ -331,12 +331,26 @@ def main():
     )
     parser.add_argument("musicFolder", help="Path to the directory containing music files")
     parser.add_argument("outputFile", help="Path where the HTML catalog will be written")
-    parser.add_argument("--intro", action=argparse.BooleanOptionalAction, default=True,
-                        help="Include/exclude introduction section (default: include)")
-    parser.add_argument("--genPDF", action=argparse.BooleanOptionalAction, default=False,
-                        help="Generate PDFs from ChordPro files (default: no)")
-    parser.add_argument("--forcePDF", action=argparse.BooleanOptionalAction, default=False,
-                        help="Regenerate all PDFs even if they exist (default: no)")
+    
+    # Python 3.8 compatible boolean flags (instead of BooleanOptionalAction)
+    intro_group = parser.add_mutually_exclusive_group()
+    intro_group.add_argument("--intro", dest="intro", action="store_true", default=True,
+                        help="Include introduction section (default)")
+    intro_group.add_argument("--no-intro", dest="intro", action="store_false",
+                        help="Exclude introduction section")
+    
+    genpdf_group = parser.add_mutually_exclusive_group()
+    genpdf_group.add_argument("--genPDF", dest="genPDF", action="store_true", default=False,
+                        help="Generate PDFs from ChordPro files")
+    genpdf_group.add_argument("--no-genPDF", dest="genPDF", action="store_false",
+                        help="Do not generate PDFs (default)")
+    
+    forcepdf_group = parser.add_mutually_exclusive_group()
+    forcepdf_group.add_argument("--forcePDF", dest="forcePDF", action="store_true", default=False,
+                        help="Regenerate all PDFs even if they exist")
+    forcepdf_group.add_argument("--no-forcePDF", dest="forcePDF", action="store_false",
+                        help="Do not regenerate existing PDFs (default)")
+    
     parser.add_argument("--filter", choices=["none", "hidden", "timestamp"], default="timestamp",
                         help="Filter method: 'none' (show all files), 'hidden' (hide files with .hide), 'timestamp' (show newest versions only)")
     args = parser.parse_args()
