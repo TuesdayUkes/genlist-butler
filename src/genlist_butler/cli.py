@@ -165,8 +165,8 @@ h2 {
   overflow-wrap:anywhere;
 }
 
-/* Row number styling */
-#dataTable td:first-child {
+/* Row number styling - only when line numbers are enabled */
+#dataTable.with-line-numbers td:first-child {
   font-weight: 600;
   color: var(--text-secondary);
   font-family: 'Monaco', 'Consolas', monospace;
@@ -176,7 +176,13 @@ h2 {
 }
 
 /* Song title styling */
-#dataTable td:nth-child(2) {
+#dataTable.with-line-numbers td:nth-child(2) {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 0px;
+}
+
+#dataTable.no-line-numbers td:first-child {
   font-weight: 600;
   color: var(--text-primary);
   min-width: 0px;
@@ -251,7 +257,7 @@ h2 {
     padding: 0.75rem 0.5rem;
   }
   
-  #dataTable td:first-child {
+  #dataTable.with-line-numbers td:first-child {
     width: 60px;
   }
 }
@@ -339,6 +345,8 @@ def main():
                         help="Regenerate all PDFs even if they exist (default: no)")
     parser.add_argument("--filter", choices=["none", "hidden", "timestamp"], default="timestamp",
                         help="Filter method: 'none' (show all files), 'hidden' (hide files with .hide), 'timestamp' (show newest versions only)")
+    parser.add_argument("--line-numbers", action=argparse.BooleanOptionalAction, default=True,
+                        help="Include/exclude row numbers in the generated table (default: include)")
     args = parser.parse_args()
 
     print("Generating Music List (this takes a few seconds)", file=sys.stderr)
@@ -350,6 +358,7 @@ def main():
     forceNewPDF = args.forcePDF
     genPDF = args.genPDF
     filterMethod = args.filter
+    showLineNumbers = args.line_numbers
 
     now = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
@@ -772,9 +781,13 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
         if intro:
             htmlOutput.writelines(introduction)
         htmlOutput.writelines(searchControls)
-        htmlOutput.write('<table id="dataTable">')
+        tableClass = 'class="with-line-numbers"' if showLineNumbers else 'class="no-line-numbers"'
+        htmlOutput.write(f'<table id="dataTable" {tableClass}>')
         htmlOutput.write("<thead>\n")
-        htmlOutput.write("<tr><th>#</th><th>Song Title</th><th>Downloads</th></tr>\n")
+        if showLineNumbers:
+            htmlOutput.write("<tr><th>#</th><th>Song Title</th><th>Downloads</th></tr>\n")
+        else:
+            htmlOutput.write("<tr><th>Song Title</th><th>Downloads</th></tr>\n")
         htmlOutput.write("</thead>\n")
         htmlOutput.write("<tbody>\n")
         row_number = 1
@@ -801,9 +814,10 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
                 classAttr = f' class="{" ".join(cssClasses)}"' if cssClasses else ''
 
                 htmlOutput.write(f"<tr{classAttr}>")
-                # first table column contains the row number
-                htmlOutput.write(f"  <td>{row_number}</td>")
-                # second table column contains the song title (f[0])
+                # conditionally include row number column
+                if showLineNumbers:
+                    htmlOutput.write(f"  <td>{row_number}</td>")
+                # song title column
                 htmlOutput.write(f"  <td>{f[0]}</td>\n<td>")
                 # the remainder of f's elements are files that match the title in f[0]
                 # Sort the files to ensure consistent ordering across operating systems
