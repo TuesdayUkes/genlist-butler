@@ -722,7 +722,7 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
         createPDFs()
 
     # Pre-convert extensions to lowercase for faster comparison
-    extensions = {".pdf", ".chopro", ".cho", ".mscz", ".urltxt", ".hide", ".easy"}
+    extensions = {".pdf", ".chopro", ".cho", ".mscz", ".urltxt", ".hide", ".easy", ".mp3"}
     allFiles = []
     # Use a single rglob call and filter more efficiently
     for p in Path(musicFolder).rglob('*'):
