@@ -8,7 +8,7 @@ This repository includes two GitHub Actions workflows:
 
 **What it does:**
 - Tests the package on Linux, Windows, and macOS
-- Tests with Python 3.12 and 3.13
+- Tests with Python 3.9, 3.10, 3.11, 3.12, and 3.13
 - Verifies the command-line tool works
 - Runs basic functionality tests
 - Uploads test artifacts if tests fail

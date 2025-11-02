@@ -18,7 +18,7 @@ A command-line tool for generating HTML music archives from ChordPro files, PDFs
 
 ## Requirements
 
-- Python 3.12 or later
+- Python 3.9 or later
 - Git (for version tracking features)
 
 ## Installation
@@ -100,7 +100,7 @@ The generated HTML will use your custom styling while maintaining all the intera
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.9+
 - Git (for timestamp-based filtering)
 - ChordPro (optional, for PDF generation)
 
