@@ -132,3 +132,8 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Local demo outputs
+test_with_numbers.html
+test_without_numbers.html
+full_music_catalog.html

@@ -13,9 +13,10 @@ from posixpath import basename, splitext
 import sys
 import os
 import argparse
-from re import M
+import re
 from datetime import datetime
 from collections import defaultdict
+from html import escape
 
 
 # Default HTML header with Tuesday Ukes styling
@@ -329,6 +330,87 @@ h2 {
 
 """
 
+KEYWORD_DIRECTIVE_PATTERN = re.compile(r"\{\s*keywords?\s*:(.*?)\}", re.IGNORECASE)
+KEYWORD_LINE_PATTERN = re.compile(r"^\s*(?:#\s*)?keywords?\s*:(.*)$", re.IGNORECASE)
+SUBTITLE_DIRECTIVE_PATTERN = re.compile(r"\{\s*(?:subtitle|st)\s*:(.*?)\}", re.IGNORECASE)
+SUBTITLE_LINE_PATTERN = re.compile(r"^\s*(?:#\s*)?(?:subtitle|st)\s*:(.*)$", re.IGNORECASE)
+TITLE_DIRECTIVE_PATTERN = re.compile(r"\{\s*(?:title|t)\s*:(.*?)\}", re.IGNORECASE)
+TITLE_LINE_PATTERN = re.compile(r"^\s*(?:#\s*)?(?:title|t)\s*:(.*)$", re.IGNORECASE)
+
+
+def _split_keyword_values(raw_value):
+  return [token.strip().lower() for token in re.split(r"[;,]", raw_value) if token.strip()]
+
+
+def _keywords_from_line(line):
+  keywords = []
+  for directive in KEYWORD_DIRECTIVE_PATTERN.findall(line):
+    keywords.extend(_split_keyword_values(directive))
+
+  line_match = KEYWORD_LINE_PATTERN.match(line)
+  if line_match:
+    keywords.extend(_split_keyword_values(line_match.group(1)))
+
+  return keywords
+
+
+def _subtitles_from_line(line):
+  subtitles = []
+  for directive in SUBTITLE_DIRECTIVE_PATTERN.findall(line):
+    subtitles.append(directive.strip())
+
+  line_match = SUBTITLE_LINE_PATTERN.match(line)
+  if line_match:
+    subtitles.append(line_match.group(1).strip())
+
+  return [subtitle for subtitle in subtitles if subtitle]
+
+
+def _titles_from_line(line):
+  titles = []
+  for directive in TITLE_DIRECTIVE_PATTERN.findall(line):
+    titles.append(directive.strip())
+
+  line_match = TITLE_LINE_PATTERN.match(line)
+  if line_match:
+    titles.append(line_match.group(1).strip())
+
+  return [title for title in titles if title]
+
+
+def _lyric_from_line(line):
+  stripped = line.strip()
+  if not stripped:
+    return None
+  if stripped.startswith('#'):
+    return None
+  if stripped.startswith('{') and stripped.endswith('}'):
+    return None
+  return stripped
+
+
+def extract_chopro_metadata(file_path):
+  metadata = {
+    "keywords": set(),
+    "titles": set(),
+    "subtitles": set(),
+    "lyrics": []
+  }
+
+  try:
+    with open(file_path, "r", encoding="utf-8") as song_file:
+      for line in song_file:
+        metadata["keywords"].update(_keywords_from_line(line))
+        metadata["titles"].update(_titles_from_line(line))
+        metadata["subtitles"].update(_subtitles_from_line(line))
+        lyric_line = _lyric_from_line(line)
+        if lyric_line:
+          metadata["lyrics"].append(lyric_line)
+  except (OSError, UnicodeDecodeError) as exc:
+    print(f"Warning: Could not read metadata from {file_path}: {exc}", file=sys.stderr)
+
+  return metadata
+
 
 def main():
     """Main entry point for genlist CLI"""
@@ -618,10 +700,14 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
     searchControls = """
 <div class="search-controls">
     <h2>Search & Filter</h2>
-    <input type="text" id="searchInput" placeholder="🔍 Search songs by title...">
+    <input type="text" id="searchInput" placeholder="🔍 Search songs by title, keyword, or lyrics...">
     <div class="filter-checkbox">
         <input type="checkbox" id="easyFilter">
         <label for="easyFilter">🎵 Show only easy songs (perfect for beginners!)</label>
+    </div>
+    <div class="filter-checkbox">
+      <input type="checkbox" id="lyricSearchToggle" checked>
+      <label for="lyricSearchToggle">📝 Include lyric search (may be slower)</label>
     </div>""" + ("""
     <div class="filter-checkbox">
         <input type="checkbox" id="showAllVersions">
@@ -640,6 +726,7 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
     const searchInput = document.getElementById('searchInput');
     const easyFilter = document.getElementById('easyFilter');
     const showAllVersions = document.getElementById('showAllVersions');
+    const lyricSearchToggle = document.getElementById('lyricSearchToggle');
     const table = document.getElementById('dataTable');
     const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
     const searchStats = document.getElementById('searchStats');
@@ -650,14 +737,16 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
     totalCountSpan.textContent = rows.length;
 
     function updateSearchStats(visibleCount) {
-        visibleCountSpan.textContent = visibleCount;
-        searchStats.style.display = (searchInput.value || easyFilter.checked || (showAllVersions && showAllVersions.checked)) ? 'block' : 'none';
+      visibleCountSpan.textContent = visibleCount;
+      const showStats = searchInput.value || easyFilter.checked || (showAllVersions && showAllVersions.checked) || (lyricSearchToggle && !lyricSearchToggle.checked);
+      searchStats.style.display = showStats ? 'block' : 'none';
     }
 
     function filterRows() {
         const searchFilter = searchInput.value.toLowerCase();
         const easyOnly = easyFilter.checked;
         const showAll = showAllVersions ? showAllVersions.checked : true;
+      const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
         let visibleCount = 0;
 
         // Add loading effect
@@ -666,9 +755,11 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
         setTimeout(() => {
             for (let i = 0; i < rows.length; i++) {
                 let rowText = rows[i].textContent.toLowerCase();
+                let metadataText = (rows[i].dataset.metadata || '').toLowerCase();
+                let lyricText = lyricSearchEnabled ? (rows[i].dataset.lyrics || '').toLowerCase() : '';
                 let isEasy = rows[i].classList.contains('easy-song');
 
-                let showBySearch = !searchFilter || rowText.includes(searchFilter);
+                let showBySearch = !searchFilter || rowText.includes(searchFilter) || metadataText.includes(searchFilter) || (lyricText && lyricText.includes(searchFilter));
                 let showByEasy = !easyOnly || isEasy;
 
                 const shouldShow = showBySearch && showByEasy;
@@ -700,6 +791,9 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
     easyFilter.addEventListener('change', filterRows);
     if (showAllVersions) {
         showAllVersions.addEventListener('change', filterRows);
+    }
+    if (lyricSearchToggle) {
+      lyricSearchToggle.addEventListener('change', filterRows);
     }
 
     // Initialize with default filtering based on server-side filter method
@@ -754,6 +848,21 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
         defaultHiddenFiles = hiddenByTimestamp | hiddenByHideFiles
 
     easySongs = getEasySongs(allFiles)
+
+    # Precompute searchable metadata pulled from each ChordPro file so the HTML can expose it to the search UI
+    choproSearchIndex = defaultdict(lambda: {"keywords": set(), "titles": set(), "subtitles": set(), "lyrics": []})
+    for filePath in allFiles:
+        if ext(filePath).lower() == ".chopro":
+            metadata = extract_chopro_metadata(filePath)
+            if not any(metadata.values()):
+                continue
+            titleKey = dictCompare(filename(filePath))
+            entry = choproSearchIndex[titleKey]
+            entry["keywords"].update(metadata["keywords"])
+            entry["titles"].update(metadata["titles"])
+            entry["subtitles"].update(metadata["subtitles"])
+            if metadata["lyrics"]:
+                entry["lyrics"].extend(metadata["lyrics"])
 
     # return the first file that matches basename (there should be only zero or one
     # matches). Return None if no matches found.
@@ -810,10 +919,34 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
                     cssClasses.append("easy-song")
                 if isHiddenVersion:
                     cssClasses.append("hidden-version")
-                
-                classAttr = f' class="{" ".join(cssClasses)}"' if cssClasses else ''
 
-                htmlOutput.write(f"<tr{classAttr}>")
+                titleKey = dictCompare(f[0])
+                titleMetadata = choproSearchIndex.get(titleKey)
+
+                attributeParts = []
+                if cssClasses:
+                    attributeParts.append(f'class="{" ".join(cssClasses)}"')
+
+                if titleMetadata:
+                  metadataTokens = []
+                  if titleMetadata["keywords"]:
+                    metadataTokens.append(" ".join(sorted(titleMetadata["keywords"])))
+                  if titleMetadata["titles"]:
+                    metadataTokens.append(" ".join(sorted(titleMetadata["titles"])))
+                  if titleMetadata["subtitles"]:
+                    metadataTokens.append(" ".join(sorted(titleMetadata["subtitles"])))
+
+                  if metadataTokens:
+                    metadataValue = escape(" ".join(metadataTokens).lower(), quote=True)
+                    attributeParts.append(f'data-metadata="{metadataValue}"')
+
+                  if titleMetadata["lyrics"]:
+                    lyricsValue = escape(" ".join(titleMetadata["lyrics"]).lower(), quote=True)
+                    attributeParts.append(f'data-lyrics="{lyricsValue}"')
+
+                attrString = f" {' '.join(attributeParts)}" if attributeParts else ''
+
+                htmlOutput.write(f"<tr{attrString}>")
                 # conditionally include row number column
                 if showLineNumbers:
                     htmlOutput.write(f"  <td>{row_number}</td>")
