@@ -107,11 +107,12 @@ twine upload dist/*
 1. **Zero Configuration** - Works out of the box with beautiful styling
 2. **Fast** - 89x performance improvement over naive approach
 3. **Smart Version Control** - Uses git timestamps to find newest files
-4. **Flexible Filtering** - Three modes: none, hidden, timestamp
-5. **Easy Song Support** - Special markers for beginner-friendly songs
-6. **PDF Generation** - Optional ChordPro to PDF conversion
-7. **Interactive HTML** - Search, filter, and responsive design
-8. **Professional Output** - Tuesday Ukes branding and styling
+4. **Metadata-Aware Search** - Parses `{title}`, `{subtitle}`, `{keywords}` plus optional lyrics with a UI toggle
+5. **Flexible Filtering** - Three modes: none, hidden, timestamp
+6. **Easy Song Support** - Special markers for beginner-friendly songs
+7. **PDF Generation** - Optional ChordPro to PDF conversion
+8. **Interactive HTML** - Search, filter, and responsive design
+9. **Professional Output** - Tuesday Ukes branding and styling
 
 ## 🔧 Maintenance
 

@@ -33,7 +33,8 @@ This will:
 ## Open the Result
 
 Open `index.html` in your web browser. You'll see:
-- 🔍 **Search bar** - Find songs by title
+- 🔍 **Search bar** - Find songs by title, keywords, subtitles, or (optionally) lyrics
+- 📝 **Lyric search toggle** - Disable lyric matching if you only need metadata/title searches
 - 🎵 **Easy songs filter** - Show only beginner-friendly songs
 - 🗂️ **Version toggle** - Show/hide older file versions
 - 📊 **Song table** - Numbered list with download links
@@ -100,6 +101,22 @@ music/
   new-arrangement/
     Yesterday.chopro      ← This one will be shown
 ```
+
+### Add Metadata to ChordPro Files
+
+Improve search results by embedding metadata directly in your `.chopro` charts:
+
+```chordpro
+{title: The Weight}
+{subtitle: The Band}
+{keywords: classic; jam; 60s}
+
+[C]I pulled into [G]Nazareth...
+```
+
+- `{title:}` / `{t:}` and `{subtitle:}` / `{st:}` are indexed automatically.
+- `{keywords:}` (or `# keywords:` comments) turn into searchable tags.
+- Lyrics are also indexed, but users can uncheck **Include lyric search** in the UI for faster filtering if desired.
 
 ## Folder Structure Example
 

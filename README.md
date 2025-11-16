@@ -1,8 +1,8 @@
 # GenList Butler
 
-[![Tests](https://github.com/TuesdayUkes/genlist/actions/workflows/test.yml/badge.svg)](https://github.com/TuesdayUkes/genlist/actions/workflows/test.yml)
-[![PyPI version](https://badge.fury.io/py/genlist.svg)](https://badge.fury.io/py/genlist)
-[![Python versions](https://img.shields.io/pypi/pyversions/genlist.svg)](https://pypi.org/project/genlist/)
+[![Tests](https://github.com/TuesdayUkes/genlist-butler/actions/workflows/test.yml/badge.svg)](https://github.com/TuesdayUkes/genlist-butler/actions/workflows/test.yml)
+[![PyPI version](https://badge.fury.io/py/genlist-butler.svg)](https://badge.fury.io/py/genlist-butler)
+[![Python versions](https://img.shields.io/pypi/pyversions/genlist-butler.svg)](https://pypi.org/project/genlist-butler/)
 
 A command-line tool for generating HTML music archives from ChordPro files, PDFs, and other music notation files. Originally created for the Tuesday Ukulele Group, this tool scans a directory tree of music files and generates a searchable, filterable HTML catalog.
 
@@ -13,6 +13,7 @@ A command-line tool for generating HTML music archives from ChordPro files, PDFs
 - 🎯 **Filtering Options**: Hide older versions, mark easy songs, exclude specific files
 - 📄 **PDF Generation**: Optional automatic PDF generation from ChordPro files
 - 🌐 **Interactive HTML**: Generates searchable, filterable HTML catalogs with modern UI
+- 🧠 **Metadata-Aware Search**: Parses `{title:}`, `{subtitle:}`, `{keywords:}` (and optional lyrics) so the catalog can be filtered beyond filenames
 - 🎨 **Beautiful Styling**: Includes Tuesday Ukes' professional HTML template - no configuration needed!
 - ⚡ **Fast**: Optimized git operations for quick catalog generation
 
@@ -26,13 +27,13 @@ A command-line tool for generating HTML music archives from ChordPro files, PDFs
 Install using pipx (recommended):
 
 ```bash
-pipx install genlist
+pipx install genlist-butler
 ```
 
 Or using pip:
 
 ```bash
-pip install genlist
+pip install genlist-butler
 ```
 
 ## Usage
@@ -88,6 +89,26 @@ GenList Butler uses special marker files:
 - **`.hide` files**: Create a file with `.hide` extension (e.g., `song.hide`) to hide all files with the same base name from the catalog
 - **`.easy` files**: Create a file with `.easy` extension (e.g., `song.easy`) to mark all files with the same base name as "easy songs" for filtering
 
+### Search Metadata & Lyrics
+
+The search bar now understands more than filenames:
+
+- `{title: ...}` / `{t: ...}` and `{subtitle: ...}` / `{st: ...}` directives are indexed automatically.
+- `{keywords: folk; jam; singalong}` directives (or `# keywords:` inline comments) let you define search tags without changing filenames.
+- Full lyric text from `.chopro` files is indexed as well, and users can disable lyric-matching with the **Include lyric search** checkbox if they want faster filtering.
+
+Add metadata directly in your ChordPro charts:
+
+```chordpro
+{title: Wagon Wheel}
+{subtitle: Old Crow Medicine Show}
+{keywords: campfire; beginner; singalong}
+
+[G]Heading down south to the [D]land of the pines...
+```
+
+Those keywords/subtitles become instantly searchable in the generated HTML.
+
 ### Custom HTML Styling
 
 GenList-Butler includes a beautiful, professional HTML template out of the box (Tuesday Ukes' styling). However, you can customize it:
@@ -124,8 +145,8 @@ To contribute or modify:
 
 ```bash
 # Clone the repository
-git clone https://github.com/TuesdayUkes/genlist.git
-cd genlist
+git clone https://github.com/TuesdayUkes/genlist-butler.git
+cd genlist-butler
 
 # Install in development mode
 pip install -e ".[dev]"

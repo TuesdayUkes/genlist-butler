@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Metadata-aware search that indexes `{title}`, `{subtitle}`, and `{keywords}` directives from ChordPro files
+- Optional "Include lyric search" toggle so large catalogs can disable lyric matching for faster filtering
+- Documentation updates covering the new search capabilities and ChordPro metadata best practices
+
 ## [1.0.0] - 2025-01-XX
 
 ### Added
