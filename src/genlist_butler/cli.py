@@ -336,6 +336,7 @@ SUBTITLE_DIRECTIVE_PATTERN = re.compile(r"\{\s*(?:subtitle|st)\s*:(.*?)\}", re.I
 SUBTITLE_LINE_PATTERN = re.compile(r"^\s*(?:#\s*)?(?:subtitle|st)\s*:(.*)$", re.IGNORECASE)
 TITLE_DIRECTIVE_PATTERN = re.compile(r"\{\s*(?:title|t)\s*:(.*?)\}", re.IGNORECASE)
 TITLE_LINE_PATTERN = re.compile(r"^\s*(?:#\s*)?(?:title|t)\s*:(.*)$", re.IGNORECASE)
+CHORD_PATTERN = re.compile(r"\[[^\]]+\]")
 
 
 def _split_keyword_values(raw_value):
@@ -386,7 +387,27 @@ def _lyric_from_line(line):
     return None
   if stripped.startswith('{') and stripped.endswith('}'):
     return None
-  return stripped
+  sanitized = _sanitize_lyric_text(stripped)
+  return sanitized if sanitized else None
+
+
+def _sanitize_lyric_text(line):
+  """Remove inline chord markers and lyric hyphenation artifacts to improve searchability."""
+
+  without_chords = CHORD_PATTERN.sub('', line)
+  # Chord writers often split syllables like merri-[D7]-ly; remove those filler hyphens/spaces between letters
+  def _strip_syllable_hyphens(text):
+    pattern = re.compile(r"(?<=\w)(?:\s*[-]\s*)+(?=\w)")
+    previous = None
+    current = text
+    while current != previous:
+      previous = current
+      current = pattern.sub('', current)
+    return current
+
+  smoothed = _strip_syllable_hyphens(without_chords)
+  normalized = re.sub(r"\s+", " ", smoothed).strip()
+  return normalized
 
 
 def extract_chopro_metadata(file_path):
