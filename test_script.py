@@ -9,7 +9,7 @@ from genlist_butler.cli import main
 
 # Test with line numbers (default)
 print("Testing with line numbers (default)...")
-sys.argv = ['genlist', 'test_music', 'test_with_numbers.html', '--no-intro']
+sys.argv = ['genlist', 'test_music', 'test_with_numbers.html']
 try:
     main()
     print("✓ Generated test_with_numbers.html")
@@ -18,7 +18,7 @@ except Exception as e:
 
 # Test without line numbers
 print("\nTesting without line numbers...")
-sys.argv = ['genlist', 'test_music', 'test_without_numbers.html', '--no-intro', '--no-line-numbers']
+sys.argv = ['genlist', 'test_music', 'test_without_numbers.html', '--no-line-numbers']
 try:
     main()
     print("✓ Generated test_without_numbers.html")

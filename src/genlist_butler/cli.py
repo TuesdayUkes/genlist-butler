@@ -42,6 +42,10 @@ body.custom-background {
   color: var(--text-primary);
 }
 
+.desktop-only {
+  display: block;
+}
+
 /* Container with max-width for better readability */
 .site-inner {
   max-width: 1200px;
@@ -260,6 +264,10 @@ h2 {
   
   #dataTable.with-line-numbers td:first-child {
     width: 60px;
+  }
+
+  .desktop-only {
+    display: none !important;
   }
 }
 
@@ -716,25 +724,25 @@ def main():
         header = DEFAULT_HTML_HEADER.splitlines(keepends=True)
 
     introduction = """
-<h1>Tuesday Ukes' Archive of Ukulele Songs and Chords</h1>
+  <h1>Tuesday Ukes' Archive of Ukulele Songs and Chords</h1>
 
-<section class="archive card">
-<div class="archive-intro card">
+  <section class="archive card">
+    <div class="archive-overview card desktop-only">
+      <p>Whether you're a beginner ukulele player looking for easy songs or a longtime
+      player searching for fun songs, this is the resource for you. Here you will find
+      ukulele chords and chord diagrams for uke players of all levels.</p>
 
-<p>Whether you're a beginner ukulele player looking for easy songs or a longtime
-player searching for fun songs, this is the resource for you. Here you will find
-ukulele chords and chord diagrams for uke players of all levels.</p>
+      <p>This collection of the best ukulele songs has been built over time by members
+      of Austin's Tuesday Ukulele Group. </p>
 
-<p>This collection of the best ukulele songs has been built over time by members
-of Austin's Tuesday Ukulele Group. </p>
-
-<h2>Lots of Popular Songs</h2>
-<p>There's a big range: Easy ukulele songs with simple chords for beginner
-ukulele players with just 3 chords or 4 chords. You will find great songs by
-Paul McCartney, Neil Diamond, Bob Dylan, John Denver, and Bob Marley turned into
-ukulele music. More-advanced ukulele music players can find finger-stretching
-chord changes and chord shapes applied to popular ukulele songs. </p>
-"""
+      <h2>Lots of Popular Songs</h2>
+      <p>There's a big range: Easy ukulele songs with simple chords for beginner
+      ukulele players with just 3 chords or 4 chords. You will find great songs by
+      Paul McCartney, Neil Diamond, Bob Dylan, John Denver, and Bob Marley turned into
+      ukulele music. More-advanced ukulele music players can find finger-stretching
+      chord changes and chord shapes applied to popular ukulele songs. </p>
+    </div>
+  """
 
     searchControls = """
 <div class="search-controls">
@@ -759,8 +767,7 @@ chord changes and chord shapes applied to popular ukulele songs. </p>
 """
 
     searchScript = """
-</div>
-</section>
+  </section>
 <script>
     const searchInput = document.getElementById('searchInput');
     const easyFilter = document.getElementById('easyFilter');
