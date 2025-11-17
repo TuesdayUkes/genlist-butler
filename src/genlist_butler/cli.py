@@ -395,17 +395,35 @@ def _sanitize_lyric_text(line):
   """Remove inline chord markers and lyric hyphenation artifacts to improve searchability."""
 
   without_chords = CHORD_PATTERN.sub('', line)
-  # Chord writers often split syllables like merri-[D7]-ly; remove those filler hyphens/spaces between letters
-  def _strip_syllable_hyphens(text):
-    pattern = re.compile(r"(?<=\w)(?:\s*[-]\s*)+(?=\w)")
+  # Chord writers often split syllables like merri-[D7]-ly; join those while keeping true hyphenated words readable
+  def _normalize_hyphenation(text):
+    pattern = re.compile(r"(\b\w+)(?:\s*-\s*)+(\w+\b)")
+
+    def _replacer(match):
+      left = match.group(1)
+      right = match.group(2)
+      left_last = left[-1].lower()
+      right_first = right[0].lower()
+      left_is_short = len(left) <= 2
+      right_is_short = len(right) <= 2
+      left_ends_with_vowel = left_last in "aeiouy"
+      right_starts_with_vowel = right_first in "aeiouy"
+
+      # Join when the hyphen is clearly splitting one word across syllables
+      if left_is_short or right_is_short or left_ends_with_vowel or right_starts_with_vowel:
+        return f"{left}{right}"
+
+      # Otherwise treat it as a separator (e.g., old-fashioned -> old fashioned)
+      return f"{left} {right}"
+
     previous = None
     current = text
     while current != previous:
       previous = current
-      current = pattern.sub('', current)
+      current = pattern.sub(_replacer, current)
     return current
 
-  smoothed = _strip_syllable_hyphens(without_chords)
+  smoothed = _normalize_hyphenation(without_chords)
   normalized = re.sub(r"\s+", " ", smoothed).strip()
   return normalized
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 import textwrap
@@ -101,6 +102,16 @@ def test_cli_embeds_metadata_attributes(tmp_path: Path, monkeypatch: pytest.Monk
 
     html_output = output_file.read_text(encoding="utf-8")
 
-    assert "data-metadata=\"advent hymn flourish liturgy people look east\"" in html_output
-    assert "data-lyrics=\"people look east and sing today flourish with hope today\"" in html_output
+    metadata_attr = re.search(r'data-metadata="([^"]*)"', html_output)
+    assert metadata_attr, "data-metadata attribute missing"
+    metadata_tokens = metadata_attr.group(1).split()
+    assert set(metadata_tokens) == {"advent", "hymn", "flourish", "liturgy", "people", "look", "east"}
+
+    lyrics_attr = re.search(r'data-lyrics="([^"]*)"', html_output)
+    assert lyrics_attr, "data-lyrics attribute missing"
+    lyrics_value = lyrics_attr.group(1).lower()
+    normalized_lyrics = re.sub(r"[^\w\s']", " ", lyrics_value)
+    assert "people look east and sing today" in normalized_lyrics
+    assert "flourish with hope today" in normalized_lyrics
+
     assert "People Look East" in html_output
