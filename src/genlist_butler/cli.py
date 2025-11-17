@@ -43,7 +43,7 @@ body.custom-background {
 }
 
 .desktop-only {
-  display: block;
+  display: none;
 }
 
 /* Container with max-width for better readability */
@@ -265,9 +265,11 @@ h2 {
   #dataTable.with-line-numbers td:first-child {
     width: 60px;
   }
+}
 
+@media (min-width: 769px) {
   .desktop-only {
-    display: none !important;
+    display: block;
   }
 }
 
@@ -336,6 +338,15 @@ h2 {
 </style>
 	</head>
 
+"""
+
+CUSTOM_HEADER_DESKTOP_ONLY_STYLE = """
+<style>
+.desktop-only { display: none; }
+@media (min-width: 769px) {
+  .desktop-only { display: block; }
+}
+</style>
 """
 
 KEYWORD_DIRECTIVE_PATTERN = re.compile(r"\{\s*keywords?\s*:(.*?)\}", re.IGNORECASE)
@@ -715,15 +726,19 @@ def main():
         return formattedS.translate(str.maketrans('', '', '\',\'')).lower()
 
     # Load HTML header - check for custom file first, otherwise use embedded default
+    custom_header_used = False
     if os.path.exists("HTMLheader.txt"):
         with open("HTMLheader.txt", "r", encoding='utf-8') as headerText:
             header = headerText.readlines()
         print("Using custom HTMLheader.txt from current directory", file=sys.stderr)
+        custom_header_used = True
     else:
         # Use the embedded default header
         header = DEFAULT_HTML_HEADER.splitlines(keepends=True)
 
-    introduction = """
+    extra_desktop_style = CUSTOM_HEADER_DESKTOP_ONLY_STYLE if custom_header_used else ""
+
+    introduction = f"""{extra_desktop_style}
   <h1>Tuesday Ukes' Archive of Ukulele Songs and Chords</h1>
 
   <section class="archive card">
