@@ -320,6 +320,26 @@ h2 {
   line-height: 1.4;
 }
 
+/* Per-song "show all versions" button */
+.show-all-versions-btn {
+  margin-left: 0.75rem;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: transparent;
+  color: var(--primary-color);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.show-all-versions-btn:hover,
+.show-all-versions-btn[data-expanded="true"] {
+  background: var(--primary-color);
+  color: #fff;
+}
+
 /* Hidden additional versions - remove gaps */
 .additional-version[style*="display: none"],
 .additional-version[style*="display:none"] {
@@ -770,11 +790,7 @@ def main():
     <div class="filter-checkbox">
       <input type="checkbox" id="lyricSearchToggle" checked>
       <label for="lyricSearchToggle">📝 Include lyric search (may be slower)</label>
-    </div>""" + ("""
-    <div class="filter-checkbox">
-        <input type="checkbox" id="showAllVersions">
-        <label for="showAllVersions">🗂️ Show all versions (including older duplicates)</label>
-    </div>""" if filterMethod != "none" else "") + """
+    </div>
     <div id="searchStats" class="search-stats" style="display: none;">
         Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> songs
     </div>
@@ -786,28 +802,36 @@ def main():
 <script>
     const searchInput = document.getElementById('searchInput');
     const easyFilter = document.getElementById('easyFilter');
-    const showAllVersions = document.getElementById('showAllVersions');
     const lyricSearchToggle = document.getElementById('lyricSearchToggle');
     const table = document.getElementById('dataTable');
     const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
     const searchStats = document.getElementById('searchStats');
     const visibleCountSpan = document.getElementById('visibleCount');
     const totalCountSpan = document.getElementById('totalCount');
+    const versionToggleButtons = document.querySelectorAll('.show-all-versions-btn');
 
     // Set total count
     totalCountSpan.textContent = rows.length;
 
     function updateSearchStats(visibleCount) {
       visibleCountSpan.textContent = visibleCount;
-      const showStats = searchInput.value || easyFilter.checked || (showAllVersions && showAllVersions.checked) || (lyricSearchToggle && !lyricSearchToggle.checked);
+      const showStats = searchInput.value || easyFilter.checked || (lyricSearchToggle && !lyricSearchToggle.checked);
       searchStats.style.display = showStats ? 'block' : 'none';
+    }
+
+    function applyAdditionalVersionVisibility(row) {
+        const toggleButton = row.querySelector('.show-all-versions-btn');
+        const isExpanded = toggleButton && toggleButton.getAttribute('data-expanded') === 'true';
+        const additionalVersions = row.querySelectorAll('.additional-version');
+        additionalVersions.forEach(link => {
+            link.style.display = isExpanded ? '' : 'none';
+        });
     }
 
     function filterRows() {
         const searchFilter = searchInput.value.toLowerCase();
         const easyOnly = easyFilter.checked;
-        const showAll = showAllVersions ? showAllVersions.checked : true;
-      const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
+        const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
         let visibleCount = 0;
 
         // Add loading effect
@@ -828,12 +852,7 @@ def main():
 
                 if (shouldShow) {
                     visibleCount++;
-                    
-                    // Show/hide additional file versions within this row
-                    const additionalVersions = rows[i].querySelectorAll('.additional-version');
-                    additionalVersions.forEach(link => {
-                        link.style.display = showAll ? '' : 'none';
-                    });
+                    applyAdditionalVersionVisibility(rows[i]);
                 }
             }
 
@@ -850,12 +869,23 @@ def main():
     });
 
     easyFilter.addEventListener('change', filterRows);
-    if (showAllVersions) {
-        showAllVersions.addEventListener('change', filterRows);
-    }
     if (lyricSearchToggle) {
-      lyricSearchToggle.addEventListener('change', filterRows);
+        lyricSearchToggle.addEventListener('change', filterRows);
     }
+
+    versionToggleButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const expanded = button.getAttribute('data-expanded') === 'true';
+            const newState = !expanded;
+            button.setAttribute('data-expanded', newState.toString());
+            button.setAttribute('aria-expanded', newState.toString());
+            button.textContent = newState ? 'Hide older versions' : 'Show all versions';
+            const row = button.closest('tr');
+            if (row) {
+                applyAdditionalVersionVisibility(row);
+            }
+        });
+    });
 
     // Initialize with default filtering based on server-side filter method
     // Hide additional versions by default unless filter method was "none"
@@ -967,11 +997,11 @@ def main():
                 isEasy = any(str(os.path.splitext(file)[0]).lower() in easySongs for file in f[1:])
                 
                 # Check if this song has additional versions that were filtered out
-                # This means there are files available when "show all versions" is checked
+                # Used to determine whether to render a per-song "show all versions" button
                 hasAdditionalVersions = any(file in defaultHiddenFiles for file in f[1:])
                 
                 # Only mark as hidden-version if there are additional filtered versions available
-                # This helps users know they can see more by checking "show all versions"
+                # This helps users notice that more downloads exist in the same row
                 isHiddenVersion = hasAdditionalVersions
                 
                 # Build CSS classes
@@ -1011,8 +1041,14 @@ def main():
                 # conditionally include row number column
                 if showLineNumbers:
                     htmlOutput.write(f"  <td>{row_number}</td>")
-                # song title column
-                htmlOutput.write(f"  <td>{f[0]}</td>\n<td>")
+                # song title column + optional per-row version toggle
+                htmlOutput.write("  <td>")
+                htmlOutput.write(f"{f[0]}")
+                if hasAdditionalVersions:
+                    htmlOutput.write(
+                        ' <button type="button" class="show-all-versions-btn" data-expanded="false" aria-expanded="false">Show all versions</button>'
+                    )
+                htmlOutput.write("</td>\n<td>")
                 # the remainder of f's elements are files that match the title in f[0]
                 # Sort the files to ensure consistent ordering across operating systems
                 # Sort by extension first, then by the complete normalized path
