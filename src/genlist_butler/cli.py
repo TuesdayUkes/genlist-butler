@@ -522,6 +522,12 @@ def main():
 
     now = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
+    def append_cache_bust(url):
+      if not url:
+        return url
+      separator = '&' if '?' in url else '?'
+      return f"{url}{separator}cb={now}"
+
     markerExtensions = {".easy", ".hide"}
     nonVersionedExtensions = markerExtensions | {".urltxt"}
 
@@ -999,10 +1005,13 @@ def main():
                 # Check if this song is marked as easy
                 isEasy = any(str(os.path.splitext(file)[0]).lower() in easySongs for file in f[1:])
                 
-                # Check if this song has additional versions that were filtered out
+                # Check if this song has additional versions hidden by the default filter
                 # Used to determine whether to render a per-song "show all versions" button
                 relevantDownloads = [file for file in f[1:] if ext(file) not in markerExtensions]
-                hasAdditionalVersions = any(file in defaultHiddenFiles for file in relevantDownloads)
+                hiddenDownloads = [file for file in relevantDownloads if file in defaultHiddenFiles]
+                visibleDownloads = [file for file in relevantDownloads if file not in defaultHiddenFiles]
+                hasAdditionalVersions = bool(visibleDownloads) and bool(hiddenDownloads)
+                forceRevealHiddenDownloads = not visibleDownloads and bool(hiddenDownloads)
                 
                 # Only mark as hidden-version if there are additional filtered versions available
                 # This helps users notice that more downloads exist in the same row
@@ -1063,13 +1072,18 @@ def main():
                         continue
                     
                     # Determine if this file is hidden by the current filter method
-                    fileClass = ' class="additional-version"' if i in defaultHiddenFiles else ''
+                    isHiddenByDefault = i in defaultHiddenFiles
+                    shouldForceVisible = forceRevealHiddenDownloads and isHiddenByDefault
+                    fileClass = '' if shouldForceVisible else (' class="additional-version"' if isHiddenByDefault else '')
                     
                     if ext(i) == ".urltxt":
-                        with open(i, "r") as urlFile:
-                            label = urlFile.readline().strip()
-                            address = urlFile.readline().strip()
-                        htmlOutput.write(f"<a href=\"{address}\" target=\"_blank\"{fileClass}>{label}</a><br>\n")
+                      with open(i, "r") as urlFile:
+                        label = urlFile.readline().strip()
+                        address = urlFile.readline().strip()
+                      busted_address = append_cache_bust(address)
+                      htmlOutput.write(
+                        f"<a href=\"{escape(busted_address, quote=True)}\" target=\"_blank\"{fileClass}>{escape(label)}</a><br>\n"
+                      )
                     elif ext(i) in downloadExtensions:
                         htmlOutput.write(f" <a href=\"{str(i).replace(' ','%20')}?v={now}\" download=\"{filename(i)}{ext(i)}\" target=\"_blank\"{fileClass}>{ext(i)}</a><br>\n")
                     else:

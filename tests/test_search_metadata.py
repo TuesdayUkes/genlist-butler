@@ -152,3 +152,76 @@ def test_cli_shows_all_urltxt_versions(tmp_path: Path, monkeypatch: pytest.Monke
     assert "Archive" in html_output
     assert "https://doctoruke.com/song" in html_output
     assert "https://archive.example/song" in html_output
+
+
+def test_cli_cache_busts_duplicate_urltxt_links(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Duplicate .urltxt files must both appear with cache-busting query params."""
+
+    music_dir = tmp_path / "set"
+    (music_dir / "alt").mkdir(parents=True)
+
+    (music_dir / "Tune.chopro").write_text("{title: Tune}\nLa la", encoding="utf-8")
+
+    base_url = "https://example.com/resource"
+
+    (music_dir / "Tune.urltxt").write_text("Main\n" + base_url + "\n", encoding="utf-8")
+    (music_dir / "alt" / "Tune.urltxt").write_text("Alt\n" + base_url + "\n", encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--filter",
+        "timestamp",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli_main()
+
+    html_output = output_file.read_text(encoding="utf-8")
+
+    assert html_output.count("Main") == 1
+    assert html_output.count("Alt") == 1
+
+    cache_buster_snippet = base_url + "?cb="
+    assert cache_buster_snippet in html_output
+    assert html_output.count(cache_buster_snippet) == 2
+
+
+def test_cli_reveals_entirely_hidden_song_without_toggle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """If every download is hidden by .hide markers, render it without requiring the toggle."""
+
+    music_dir = tmp_path / "music"
+    music_dir.mkdir()
+
+    chart = music_dir / "Hidden Hit.pdf"
+    chart.write_text("fake pdf", encoding="utf-8")
+    (music_dir / "Hidden Hit.hide").write_text("", encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--filter",
+        "timestamp",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli_main()
+
+    html_output = output_file.read_text(encoding="utf-8")
+
+    row_start = html_output.find("Hidden Hit")
+    assert row_start != -1
+    row_end = html_output.find("</tr>", row_start)
+    row_html = html_output[row_start:row_end]
+
+    assert "Show all versions" not in row_html
+    assert "additional-version" not in row_html
+    assert "Hidden%20Hit.pdf" in html_output
