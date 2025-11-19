@@ -115,3 +115,40 @@ def test_cli_embeds_metadata_attributes(tmp_path: Path, monkeypatch: pytest.Monk
     assert "flourish with hope today" in normalized_lyrics
 
     assert "People Look East" in html_output
+
+
+def test_cli_shows_all_urltxt_versions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Timestamp filtering should never hide additional .urltxt download links."""
+
+    music_dir = tmp_path / "music"
+    (music_dir / "older").mkdir(parents=True)
+
+    chart_path = music_dir / "Song.chopro"
+    chart_path.write_text("{title: Song}\nLyrics present", encoding="utf-8")
+
+    primary_url = music_dir / "Song.urltxt"
+    primary_url.write_text("Doctor Uke\nhttps://doctoruke.com/song\n", encoding="utf-8")
+
+    archive_url = music_dir / "older" / "Song.urltxt"
+    archive_url.write_text("Archive\nhttps://archive.example/song\n", encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--filter",
+        "timestamp",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli_main()
+
+    html_output = output_file.read_text(encoding="utf-8")
+
+    assert "Doctor Uke" in html_output
+    assert "Archive" in html_output
+    assert "https://doctoruke.com/song" in html_output
+    assert "https://archive.example/song" in html_output

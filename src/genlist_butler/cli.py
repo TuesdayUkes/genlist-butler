@@ -522,6 +522,9 @@ def main():
 
     now = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
+    markerExtensions = {".easy", ".hide"}
+    nonVersionedExtensions = markerExtensions | {".urltxt"}
+
     # lambda filename accepts a path and returns just the filename without an extension
     filename = lambda p: str(os.path.splitext(os.path.basename(p))[0])
 
@@ -666,11 +669,11 @@ def main():
         filesByBasenameAndExt = defaultdict(list)
         
         for f in allFiles:
-            if ext(f).lower() in [".hide", ".easy"]:
-                continue  # Skip marker files
-            
-            baseName = dictCompare(filename(f))
             extension = ext(f).lower()
+            if extension in nonVersionedExtensions:
+                continue  # Skip marker and non-versioned files
+
+            baseName = dictCompare(filename(f))
             filesByBasenameAndExt[(baseName, extension)].append(f)
         
         # Collect all files that need timestamps (files with duplicates)
@@ -710,7 +713,7 @@ def main():
         
         # Add back the marker files (.hide, .easy)
         for f in allFiles:
-            if ext(f).lower() in [".hide", ".easy"]:
+            if ext(f).lower() in nonVersionedExtensions:
                 newestFiles.append(f)
         
         return newestFiles
@@ -998,7 +1001,8 @@ def main():
                 
                 # Check if this song has additional versions that were filtered out
                 # Used to determine whether to render a per-song "show all versions" button
-                hasAdditionalVersions = any(file in defaultHiddenFiles for file in f[1:])
+                relevantDownloads = [file for file in f[1:] if ext(file) not in markerExtensions]
+                hasAdditionalVersions = any(file in defaultHiddenFiles for file in relevantDownloads)
                 
                 # Only mark as hidden-version if there are additional filtered versions available
                 # This helps users notice that more downloads exist in the same row
