@@ -110,3 +110,8 @@ jobs:
         \`\`\`bash
         pipx install genlist-butler==${{ steps.bump.outputs.new_version }}
         \`\`\`"
+
+  publish-package:
+    needs: bump-and-release
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit
