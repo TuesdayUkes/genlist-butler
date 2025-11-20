@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      release_sha: ${{ steps.release_sha.outputs.sha }}
       
     steps:
     - uses: actions/checkout@v4
@@ -91,6 +94,12 @@ jobs:
         git commit -m "Bump version to ${{ steps.bump.outputs.new_version }}"
         git push
 
+    - name: Capture release commit SHA
+      id: release_sha
+      run: |
+        RELEASE_SHA=$(git rev-parse HEAD)
+        echo "sha=$RELEASE_SHA" >> $GITHUB_OUTPUT
+
     - name: Create and push tag
       run: |
         git tag -a "v${{ steps.bump.outputs.new_version }}" -m "Release v${{ steps.bump.outputs.new_version }}"
@@ -111,7 +120,70 @@ jobs:
         pipx install genlist-butler==${{ steps.bump.outputs.new_version }}
         \`\`\`"
 
-  publish-package:
+  build-distribution:
     needs: bump-and-release
-    uses: ./.github/workflows/publish.yml
-    secrets: inherit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: ${{ needs.bump-and-release.outputs.release_sha }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+
+    - name: Build package
+      run: python -m build
+
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+  publish-to-pypi:
+    needs: build-distribution
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/genlist-butler
+    permissions:
+      id-token: write
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+    - name: Publish distribution to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-to-testpypi:
+    needs: build-distribution
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/genlist-butler
+    permissions:
+      id-token: write
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+    - name: Publish distribution to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
