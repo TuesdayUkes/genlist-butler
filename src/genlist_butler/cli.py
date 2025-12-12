@@ -791,7 +791,7 @@ def main():
     searchControls = """
 <div class="search-controls">
     <h2>Search & Filter</h2>
-    <input type="text" id="searchInput" placeholder="🔍 Search songs by title, keyword, or lyrics...">
+    <input type="text" id="searchInput" placeholder="🔍 Search songs by title, keyword, or lyrics..." autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="filter-checkbox">
         <input type="checkbox" id="easyFilter">
         <label for="easyFilter">🎵 Show only easy songs (perfect for beginners!)</label>
@@ -819,6 +819,24 @@ def main():
     const totalCountSpan = document.getElementById('totalCount');
     const versionToggleButtons = document.querySelectorAll('.show-all-versions-btn');
 
+    // Normalize text so Safari smart quotes match the ASCII titles stored in the catalog
+    function normalizeSearchText(input) {
+      if (!input) {
+        return '';
+      }
+
+      let normalized = input;
+      if (typeof normalized.normalize === 'function') {
+        normalized = normalized.normalize('NFKD');
+      }
+
+      return normalized
+        .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035\u02BC]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+        .replace(/\u00A0/g, ' ')
+        .toLowerCase();
+    }
+
     // Set total count
     totalCountSpan.textContent = rows.length;
 
@@ -838,7 +856,7 @@ def main():
     }
 
     function filterRows() {
-        const searchFilter = searchInput.value.toLowerCase();
+        const searchFilter = normalizeSearchText(searchInput.value);
         const easyOnly = easyFilter.checked;
         const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
         let visibleCount = 0;
@@ -848,9 +866,9 @@ def main():
 
         setTimeout(() => {
             for (let i = 0; i < rows.length; i++) {
-                let rowText = rows[i].textContent.toLowerCase();
-                let metadataText = (rows[i].dataset.metadata || '').toLowerCase();
-                let lyricText = lyricSearchEnabled ? (rows[i].dataset.lyrics || '').toLowerCase() : '';
+                const rowText = normalizeSearchText(rows[i].textContent);
+                const metadataText = normalizeSearchText(rows[i].dataset.metadata || '');
+                const lyricText = lyricSearchEnabled ? normalizeSearchText(rows[i].dataset.lyrics || '') : '';
                 let isEasy = rows[i].classList.contains('easy-song');
 
                 let showBySearch = !searchFilter || rowText.includes(searchFilter) || metadataText.includes(searchFilter) || (lyricText && lyricText.includes(searchFilter));
