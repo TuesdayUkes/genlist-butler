@@ -105,7 +105,15 @@ def test_cli_embeds_metadata_attributes(tmp_path: Path, monkeypatch: pytest.Monk
     metadata_attr = re.search(r'data-metadata="([^"]*)"', html_output)
     assert metadata_attr, "data-metadata attribute missing"
     metadata_tokens = metadata_attr.group(1).split()
-    assert set(metadata_tokens) == {"advent", "hymn", "flourish", "liturgy", "people", "look", "east"}
+    assert set(metadata_tokens) == {
+        "advent",
+        "hymn",
+        "flourish",
+        "liturgy",
+        "people",
+        "look",
+        "east",
+    }
 
     lyrics_attr = re.search(r'data-lyrics="([^"]*)"', html_output)
     assert lyrics_attr, "data-lyrics attribute missing"
@@ -154,7 +162,9 @@ def test_cli_shows_all_urltxt_versions(tmp_path: Path, monkeypatch: pytest.Monke
     assert "https://archive.example/song" in html_output
 
 
-def test_cli_cache_busts_duplicate_urltxt_links(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cli_cache_busts_duplicate_urltxt_links(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Duplicate .urltxt files must both appear with cache-busting query params."""
 
     music_dir = tmp_path / "set"
@@ -191,7 +201,9 @@ def test_cli_cache_busts_duplicate_urltxt_links(tmp_path: Path, monkeypatch: pyt
     assert html_output.count(cache_buster_snippet) == 2
 
 
-def test_cli_reveals_entirely_hidden_song_without_toggle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cli_reveals_entirely_hidden_song_without_toggle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """If every download is hidden by .hide markers, render it without requiring the toggle."""
 
     music_dir = tmp_path / "music"
@@ -225,3 +237,115 @@ def test_cli_reveals_entirely_hidden_song_without_toggle(tmp_path: Path, monkeyp
     assert "Show all versions" not in row_html
     assert "additional-version" not in row_html
     assert "Hidden%20Hit.pdf" in html_output
+
+
+def test_javascript_search_includes_title_metadata_and_lyrics_when_enabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """JavaScript search should check title, metadata, and lyrics when lyric search is enabled."""
+
+    music_dir = tmp_path / "music"
+    music_dir.mkdir()
+
+    # Song with distinctive words in title, metadata, and lyrics
+    chart_contents = textwrap.dedent(
+        """
+        {title: Amazing Grace}
+        {subtitle: John Newton}
+        {keywords: traditional; hymn}
+
+        Amazing [G]grace how [C]sweet the [G]sound
+        That [D]saved a [Em]wretch like [D]me
+        """
+    ).strip()
+
+    chart_path = music_dir / "Amazing Grace.chopro"
+    chart_path.write_text(chart_contents, encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli_main()
+
+    html_output = output_file.read_text(encoding="utf-8")
+
+    # Verify data-metadata contains keywords and author
+    assert 'data-metadata="' in html_output
+    metadata_match = re.search(r'data-metadata="([^"]*)"', html_output)
+    assert metadata_match
+    metadata_text = metadata_match.group(1).lower()
+    assert "traditional" in metadata_text or "hymn" in metadata_text or "newton" in metadata_text
+
+    # Verify data-lyrics contains lyric text
+    assert 'data-lyrics="' in html_output
+    lyrics_match = re.search(r'data-lyrics="([^"]*)"', html_output)
+    assert lyrics_match
+    lyrics_text = lyrics_match.group(1).lower()
+    assert "wretch" in lyrics_text  # Word only in lyrics
+
+    # Verify JavaScript search logic exists
+    assert "lyricSearchToggle" in html_output
+    assert "lyricSearchEnabled" in html_output
+    assert "function filterRows()" in html_output
+
+
+def test_javascript_search_only_checks_title_when_lyrics_disabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """JavaScript search should only check song title when lyric search is unchecked."""
+
+    music_dir = tmp_path / "music"
+    music_dir.mkdir()
+
+    # Create a song with distinct searchable terms in each field
+    chart_contents = textwrap.dedent(
+        """
+        {title: Cat Accountant}
+        {subtitle: Cheryl Wheeler}
+
+        My cat accountant taps his furry head
+        His visor's green and all my numbers are red
+        """
+    ).strip()
+
+    chart_path = music_dir / "Cat Accountant.chopro"
+    chart_path.write_text(chart_contents, encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli_main()
+
+    html_output = output_file.read_text(encoding="utf-8")
+
+    # Verify the conditional search logic is present
+    assert "if (lyricSearchEnabled)" in html_output
+    assert "// Search in title, metadata, and lyrics" in html_output
+    assert "// Search only in song title (second column)" in html_output
+
+    # Verify it accesses the title cell directly
+    assert "rows[i].cells[1]" in html_output or "titleCell" in html_output
+
+    # Verify both code paths exist
+    assert "rowText.includes(searchFilter)" in html_output  # Full search path
+    assert "titleText.includes(searchFilter)" in html_output  # Title-only search path

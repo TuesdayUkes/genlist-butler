@@ -379,115 +379,111 @@ CHORD_PATTERN = re.compile(r"\[[^\]]+\]")
 
 
 def _split_keyword_values(raw_value):
-  return [token.strip().lower() for token in re.split(r"[;,]", raw_value) if token.strip()]
+    return [token.strip().lower() for token in re.split(r"[;,]", raw_value) if token.strip()]
 
 
 def _keywords_from_line(line):
-  keywords = []
-  for directive in KEYWORD_DIRECTIVE_PATTERN.findall(line):
-    keywords.extend(_split_keyword_values(directive))
+    keywords = []
+    for directive in KEYWORD_DIRECTIVE_PATTERN.findall(line):
+        keywords.extend(_split_keyword_values(directive))
 
-  line_match = KEYWORD_LINE_PATTERN.match(line)
-  if line_match:
-    keywords.extend(_split_keyword_values(line_match.group(1)))
+    line_match = KEYWORD_LINE_PATTERN.match(line)
+    if line_match:
+        keywords.extend(_split_keyword_values(line_match.group(1)))
 
-  return keywords
+    return keywords
 
 
 def _subtitles_from_line(line):
-  subtitles = []
-  for directive in SUBTITLE_DIRECTIVE_PATTERN.findall(line):
-    subtitles.append(directive.strip())
+    subtitles = []
+    for directive in SUBTITLE_DIRECTIVE_PATTERN.findall(line):
+        subtitles.append(directive.strip())
 
-  line_match = SUBTITLE_LINE_PATTERN.match(line)
-  if line_match:
-    subtitles.append(line_match.group(1).strip())
+    line_match = SUBTITLE_LINE_PATTERN.match(line)
+    if line_match:
+        subtitles.append(line_match.group(1).strip())
 
-  return [subtitle for subtitle in subtitles if subtitle]
+    return [subtitle for subtitle in subtitles if subtitle]
 
 
 def _titles_from_line(line):
-  titles = []
-  for directive in TITLE_DIRECTIVE_PATTERN.findall(line):
-    titles.append(directive.strip())
+    titles = []
+    for directive in TITLE_DIRECTIVE_PATTERN.findall(line):
+        titles.append(directive.strip())
 
-  line_match = TITLE_LINE_PATTERN.match(line)
-  if line_match:
-    titles.append(line_match.group(1).strip())
+    line_match = TITLE_LINE_PATTERN.match(line)
+    if line_match:
+        titles.append(line_match.group(1).strip())
 
-  return [title for title in titles if title]
+    return [title for title in titles if title]
 
 
 def _lyric_from_line(line):
-  stripped = line.strip()
-  if not stripped:
-    return None
-  if stripped.startswith('#'):
-    return None
-  if stripped.startswith('{') and stripped.endswith('}'):
-    return None
-  sanitized = _sanitize_lyric_text(stripped)
-  return sanitized if sanitized else None
+    stripped = line.strip()
+    if not stripped:
+        return None
+    if stripped.startswith("#"):
+        return None
+    if stripped.startswith("{") and stripped.endswith("}"):
+        return None
+    sanitized = _sanitize_lyric_text(stripped)
+    return sanitized if sanitized else None
 
 
 def _sanitize_lyric_text(line):
-  """Remove inline chord markers and lyric hyphenation artifacts to improve searchability."""
+    """Remove inline chord markers and lyric hyphenation artifacts to improve searchability."""
 
-  without_chords = CHORD_PATTERN.sub('', line)
-  # Chord writers often split syllables like merri-[D7]-ly; join those while keeping true hyphenated words readable
-  def _normalize_hyphenation(text):
-    pattern = re.compile(r"(\b\w+)(?:\s*-\s*)+(\w+\b)")
+    without_chords = CHORD_PATTERN.sub("", line)
 
-    def _replacer(match):
-      left = match.group(1)
-      right = match.group(2)
-      left_last = left[-1].lower()
-      right_first = right[0].lower()
-      left_is_short = len(left) <= 2
-      right_is_short = len(right) <= 2
-      left_ends_with_vowel = left_last in "aeiouy"
-      right_starts_with_vowel = right_first in "aeiouy"
+    # Chord writers often split syllables like merri-[D7]-ly; join those while keeping true hyphenated words readable
+    def _normalize_hyphenation(text):
+        pattern = re.compile(r"(\b\w+)(?:\s*-\s*)+(\w+\b)")
 
-      # Join when the hyphen is clearly splitting one word across syllables
-      if left_is_short or right_is_short or left_ends_with_vowel or right_starts_with_vowel:
-        return f"{left}{right}"
+        def _replacer(match):
+            left = match.group(1)
+            right = match.group(2)
+            left_last = left[-1].lower()
+            right_first = right[0].lower()
+            left_is_short = len(left) <= 2
+            right_is_short = len(right) <= 2
+            left_ends_with_vowel = left_last in "aeiouy"
+            right_starts_with_vowel = right_first in "aeiouy"
 
-      # Otherwise treat it as a separator (e.g., old-fashioned -> old fashioned)
-      return f"{left} {right}"
+            # Join when the hyphen is clearly splitting one word across syllables
+            if left_is_short or right_is_short or left_ends_with_vowel or right_starts_with_vowel:
+                return f"{left}{right}"
 
-    previous = None
-    current = text
-    while current != previous:
-      previous = current
-      current = pattern.sub(_replacer, current)
-    return current
+            # Otherwise treat it as a separator (e.g., old-fashioned -> old fashioned)
+            return f"{left} {right}"
 
-  smoothed = _normalize_hyphenation(without_chords)
-  normalized = re.sub(r"\s+", " ", smoothed).strip()
-  return normalized
+        previous = None
+        current = text
+        while current != previous:
+            previous = current
+            current = pattern.sub(_replacer, current)
+        return current
+
+    smoothed = _normalize_hyphenation(without_chords)
+    normalized = re.sub(r"\s+", " ", smoothed).strip()
+    return normalized
 
 
 def extract_chopro_metadata(file_path):
-  metadata = {
-    "keywords": set(),
-    "titles": set(),
-    "subtitles": set(),
-    "lyrics": []
-  }
+    metadata = {"keywords": set(), "titles": set(), "subtitles": set(), "lyrics": []}
 
-  try:
-    with open(file_path, "r", encoding="utf-8") as song_file:
-      for line in song_file:
-        metadata["keywords"].update(_keywords_from_line(line))
-        metadata["titles"].update(_titles_from_line(line))
-        metadata["subtitles"].update(_subtitles_from_line(line))
-        lyric_line = _lyric_from_line(line)
-        if lyric_line:
-          metadata["lyrics"].append(lyric_line)
-  except (OSError, UnicodeDecodeError) as exc:
-    print(f"Warning: Could not read metadata from {file_path}: {exc}", file=sys.stderr)
+    try:
+        with open(file_path, "r", encoding="utf-8") as song_file:
+            for line in song_file:
+                metadata["keywords"].update(_keywords_from_line(line))
+                metadata["titles"].update(_titles_from_line(line))
+                metadata["subtitles"].update(_subtitles_from_line(line))
+                lyric_line = _lyric_from_line(line)
+                if lyric_line:
+                    metadata["lyrics"].append(lyric_line)
+    except (OSError, UnicodeDecodeError) as exc:
+        print(f"Warning: Could not read metadata from {file_path}: {exc}", file=sys.stderr)
 
-  return metadata
+    return metadata
 
 
 def main():
@@ -497,16 +493,36 @@ def main():
     )
     parser.add_argument("musicFolder", help="Path to the directory containing music files")
     parser.add_argument("outputFile", help="Path where the HTML catalog will be written")
-    parser.add_argument("--intro", action=argparse.BooleanOptionalAction, default=True,
-                        help="Include/exclude introduction section (default: include)")
-    parser.add_argument("--genPDF", action=argparse.BooleanOptionalAction, default=False,
-                        help="Generate PDFs from ChordPro files (default: no)")
-    parser.add_argument("--forcePDF", action=argparse.BooleanOptionalAction, default=False,
-                        help="Regenerate all PDFs even if they exist (default: no)")
-    parser.add_argument("--filter", choices=["none", "hidden", "timestamp"], default="timestamp",
-                        help="Filter method: 'none' (show all files), 'hidden' (hide files with .hide), 'timestamp' (show newest versions only)")
-    parser.add_argument("--line-numbers", action=argparse.BooleanOptionalAction, default=True,
-                        help="Include/exclude row numbers in the generated table (default: include)")
+    parser.add_argument(
+        "--intro",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include/exclude introduction section (default: include)",
+    )
+    parser.add_argument(
+        "--genPDF",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Generate PDFs from ChordPro files (default: no)",
+    )
+    parser.add_argument(
+        "--forcePDF",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Regenerate all PDFs even if they exist (default: no)",
+    )
+    parser.add_argument(
+        "--filter",
+        choices=["none", "hidden", "timestamp"],
+        default="timestamp",
+        help="Filter method: 'none' (show all files), 'hidden' (hide files with .hide), 'timestamp' (show newest versions only)",
+    )
+    parser.add_argument(
+        "--line-numbers",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include/exclude row numbers in the generated table (default: include)",
+    )
     args = parser.parse_args()
 
     print("Generating Music List (this takes a few seconds)", file=sys.stderr)
@@ -523,10 +539,10 @@ def main():
     now = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
     def append_cache_bust(url):
-      if not url:
-        return url
-      separator = '&' if '?' in url else '?'
-      return f"{url}{separator}cb={now}"
+        if not url:
+            return url
+        separator = "&" if "?" in url else "?"
+        return f"{url}{separator}cb={now}"
 
     markerExtensions = {".easy", ".hide"}
     nonVersionedExtensions = markerExtensions | {".urltxt"}
@@ -538,18 +554,16 @@ def main():
     ext = lambda p: str(os.path.splitext(os.path.basename(p))[1]).lower()
 
     def createPDFs():
-        linuxpath = ["perl",
-                     "/home/paul/chordpro/script/chordpro.pl",
-                     "--config=/home/paul/chordpro/lib/ChordPro/res/config/ukulele.json",
-                     "--config=/home/paul/chordpro/lib/ChordPro/res/config/ukulele-ly.json"
-                     ]
+        linuxpath = [
+            "perl",
+            "/home/paul/chordpro/script/chordpro.pl",
+            "--config=/home/paul/chordpro/lib/ChordPro/res/config/ukulele.json",
+            "--config=/home/paul/chordpro/lib/ChordPro/res/config/ukulele-ly.json",
+        ]
 
-        winpath = ["chordpro",
-                   "--config=Ukulele",
-                   "--config=Ukulele-ly"
-                   ]
+        winpath = ["chordpro", "--config=Ukulele", "--config=Ukulele-ly"]
 
-        chordproSettings=[
+        chordproSettings = [
             "--define=pdf:diagrams:show=top",
             "--define=settings:inline-chords=true",
             "--define=pdf:margintop=70",
@@ -561,7 +575,7 @@ def main():
             "--define=pdf:head-first-only=true",
             "--define=pdf:fonts:chord:color=red",
             "--text-font=helvetica",
-            "--chord-font=helvetica"
+            "--chord-font=helvetica",
         ]
 
         if os.name == "nt":
@@ -570,7 +584,7 @@ def main():
             chordproSettings = linuxpath + chordproSettings
 
         extensions = [".chopro", ".cho"]
-        for p in Path(musicFolder).rglob('*'):
+        for p in Path(musicFolder).rglob("*"):
             if ext(p) in (extension.lower() for extension in extensions):
                 pdfFile = str(os.path.splitext(str(p))[0]) + ".pdf"
                 if not os.path.exists(pdfFile) or forceNewPDF:
@@ -587,20 +601,16 @@ def main():
     # folder with the same name as "easy" songs for filtering purposes.
     def getEasySongs(allFiles):
         # Use set comprehension for better performance
-        return {str(os.path.splitext(f)[0]).lower() 
-                for f in allFiles if ext(f).lower() == ".easy"}
+        return {str(os.path.splitext(f)[0]).lower() for f in allFiles if ext(f).lower() == ".easy"}
 
     def getAllGitTimestamps(files):
         """Get git timestamps for all files in one batch operation using a single git command"""
         timestamps = {}
-        
+
         # Try to find git root from current directory
         try:
             result = subprocess.run(
-                ["git", "rev-parse", "--show-toplevel"],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, timeout=5
             )
             if result.returncode == 0:
                 git_root = result.stdout.strip()
@@ -610,7 +620,7 @@ def main():
         except:
             # If git command fails, fall back to mtimes
             return {f: int(os.path.getmtime(f)) for f in files}
-        
+
         try:
             # Convert all file paths to relative paths
             relative_files = {}
@@ -619,15 +629,15 @@ def main():
                 try:
                     rel_path = os.path.relpath(abs_path, git_root)
                     # Normalize path separators for git
-                    rel_path = rel_path.replace('\\', '/')
+                    rel_path = rel_path.replace("\\", "/")
                     relative_files[rel_path] = f
                 except:
                     # If we can't get relative path, fall back to mtime
                     timestamps[f] = int(os.path.getmtime(f))
-            
+
             if not relative_files:
                 return timestamps
-            
+
             # Use git log with --name-only and custom format to get all timestamps at once
             # Format: timestamp on one line, then changed files on following lines
             result = subprocess.run(
@@ -635,19 +645,19 @@ def main():
                 capture_output=True,
                 text=True,
                 cwd=git_root,
-                timeout=30  # Longer timeout for the full log
+                timeout=30,  # Longer timeout for the full log
             )
-            
+
             if result.returncode == 0 and result.stdout:
                 # Parse the output: timestamp followed by list of files
-                lines = result.stdout.strip().split('\n')
+                lines = result.stdout.strip().split("\n")
                 current_timestamp = None
-                
+
                 for line in lines:
                     line = line.strip()
                     if not line:
                         continue
-                    
+
                     # Check if line is a timestamp (all digits)
                     if line.isdigit():
                         current_timestamp = int(line)
@@ -656,14 +666,14 @@ def main():
                         orig_path = relative_files[line]
                         if orig_path not in timestamps:
                             timestamps[orig_path] = current_timestamp
-            
+
             # For any files not found in git log, use file modification time
             for rel_path, orig_path in relative_files.items():
                 if orig_path not in timestamps:
                     timestamps[orig_path] = int(os.path.getmtime(orig_path))
-            
+
             return timestamps
-            
+
         except Exception as e:
             print(f"Error getting git timestamps: {e}", file=sys.stderr)
             # Return mtimes as fallback for all files
@@ -673,7 +683,7 @@ def main():
         """Keep only the newest version of each song file by extension type"""
         # Group files by base name (without extension) and extension
         filesByBasenameAndExt = defaultdict(list)
-        
+
         for f in allFiles:
             extension = ext(f).lower()
             if extension in nonVersionedExtensions:
@@ -681,20 +691,23 @@ def main():
 
             baseName = dictCompare(filename(f))
             filesByBasenameAndExt[(baseName, extension)].append(f)
-        
+
         # Collect all files that need timestamps (files with duplicates)
         filesNeedingTimestamps = []
         for (baseName, extension), files in filesByBasenameAndExt.items():
             if len(files) > 1:
                 filesNeedingTimestamps.extend(files)
-        
+
         # Get all timestamps in batch if there are any files with duplicates
         if filesNeedingTimestamps:
-            print(f"Fetching git timestamps for {len(filesNeedingTimestamps)} files with duplicates...", file=sys.stderr)
+            print(
+                f"Fetching git timestamps for {len(filesNeedingTimestamps)} files with duplicates...",
+                file=sys.stderr,
+            )
             gitTimestamps = getAllGitTimestamps(filesNeedingTimestamps)
         else:
             gitTimestamps = {}
-        
+
         # For each group, keep only the file with the newest git timestamp
         newestFiles = []
         for (baseName, extension), files in filesByBasenameAndExt.items():
@@ -706,34 +719,34 @@ def main():
                 for f in files:
                     timestamp = gitTimestamps.get(f, 0)
                     filesWithTimestamps.append((timestamp, f))
-                
+
                 # Sort by timestamp (newest first) and take the first one
                 filesWithTimestamps.sort(reverse=True)
                 newestFile = filesWithTimestamps[0][1]
                 newestFiles.append(newestFile)
-                
+
                 print(f"Multiple versions found for {baseName}{extension}:", file=sys.stderr)
                 for timestamp, f in filesWithTimestamps:
                     marker = "* KEPT" if f == newestFile else "  ignored"
                     print(f"  {marker}: {f} (timestamp: {timestamp})", file=sys.stderr)
-        
+
         # Add back the marker files (.hide, .easy)
         for f in allFiles:
             if ext(f).lower() in nonVersionedExtensions:
                 newestFiles.append(f)
-        
+
         return newestFiles
 
     def removeHiddenFiles(allFiles):
         # Use set for O(1) lookup instead of list with O(n) lookup
         hideFiles = set()
         visibleFiles = []
-        
+
         # Single pass to collect hide files
         for f in allFiles:
             if ext(f).lower() == ".hide":
                 hideFiles.add(str(os.path.splitext(f)[0]).lower())
-        
+
         # Second pass to filter visible files
         for f in allFiles:
             basename = str(os.path.splitext(f)[0]).lower()
@@ -743,21 +756,22 @@ def main():
         return visibleFiles
 
     # dictCompare removes articles that appear as the first word in a filename
-    articles = {'a', 'an', 'the'}  # Use set for faster lookup
+    articles = {"a", "an", "the"}  # Use set for faster lookup
+
     def dictCompare(s):
         sWords = s.split()
         if sWords and sWords[0].lower() in articles:
-            formattedS = ' '.join(sWords[1:])
+            formattedS = " ".join(sWords[1:])
         else:
             formattedS = s
 
         # Remove punctuation in one pass using translate
-        return formattedS.translate(str.maketrans('', '', '\',\'')).lower()
+        return formattedS.translate(str.maketrans("", "", "','")).lower()
 
     # Load HTML header - check for custom file first, otherwise use embedded default
     custom_header_used = False
     if os.path.exists("HTMLheader.txt"):
-        with open("HTMLheader.txt", "r", encoding='utf-8') as headerText:
+        with open("HTMLheader.txt", "r", encoding="utf-8") as headerText:
             header = headerText.readlines()
         print("Using custom HTMLheader.txt from current directory", file=sys.stderr)
         custom_header_used = True
@@ -806,7 +820,8 @@ def main():
 </div>
 """
 
-    searchScript = """
+    searchScript = (
+        """
   </section>
 <script>
     const searchInput = document.getElementById('searchInput');
@@ -831,9 +846,9 @@ def main():
       }
 
       return normalized
-        .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035\u02BC]/g, "'")
-        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
-        .replace(/\u00A0/g, ' ')
+        .replace(/[\u2018\u2019\u201a\u201b\u2032\u2035\u02bc]/g, "'")
+        .replace(/[\u201c\u201d\u201e\u201f\u2033\u2036]/g, '"')
+        .replace(/\u00a0/g, ' ')
         .toLowerCase();
     }
 
@@ -866,12 +881,24 @@ def main():
 
         setTimeout(() => {
             for (let i = 0; i < rows.length; i++) {
-                const rowText = normalizeSearchText(rows[i].textContent);
-                const metadataText = normalizeSearchText(rows[i].dataset.metadata || '');
-                const lyricText = lyricSearchEnabled ? normalizeSearchText(rows[i].dataset.lyrics || '') : '';
                 let isEasy = rows[i].classList.contains('easy-song');
+                let showBySearch = true;
 
-                let showBySearch = !searchFilter || rowText.includes(searchFilter) || metadataText.includes(searchFilter) || (lyricText && lyricText.includes(searchFilter));
+                if (searchFilter) {
+                    if (lyricSearchEnabled) {
+                        // Search in title, metadata, and lyrics
+                        const rowText = normalizeSearchText(rows[i].textContent);
+                        const metadataText = normalizeSearchText(rows[i].dataset.metadata || '');
+                        const lyricText = normalizeSearchText(rows[i].dataset.lyrics || '');
+                        showBySearch = rowText.includes(searchFilter) || metadataText.includes(searchFilter) || lyricText.includes(searchFilter);
+                    } else {
+                        // Search only in song title (second column)
+                        const titleCell = rows[i].cells[1];
+                        const titleText = titleCell ? normalizeSearchText(titleCell.textContent) : '';
+                        showBySearch = titleText.includes(searchFilter);
+                    }
+                }
+
                 let showByEasy = !easyOnly || isEasy;
 
                 const shouldShow = showBySearch && showByEasy;
@@ -916,7 +943,9 @@ def main():
 
     // Initialize with default filtering based on server-side filter method
     // Hide additional versions by default unless filter method was "none"
-    const defaultFilterMethod = '""" + filterMethod + """';
+    const defaultFilterMethod = '"""
+        + filterMethod
+        + """';
     if (defaultFilterMethod !== 'none') {
         // Hide additional file versions by default
         const additionalVersions = document.querySelectorAll('.additional-version');
@@ -929,6 +958,7 @@ def main():
     filterRows();
 </script>
 """
+    )
 
     if genPDF:
         createPDFs()
@@ -937,7 +967,7 @@ def main():
     extensions = {".pdf", ".chopro", ".cho", ".mscz", ".urltxt", ".hide", ".easy", ".mp3", ".m4a"}
     allFiles = []
     # Use a single rglob call and filter more efficiently
-    for p in Path(musicFolder).rglob('*'):
+    for p in Path(musicFolder).rglob("*"):
         if p.suffix.lower() in extensions:
             allFiles.append(p.as_posix())
 
@@ -949,7 +979,7 @@ def main():
     newestFiles = keepNewestVersionsOnly(allFiles)
     hiddenByTimestamp = set(allFiles) - set(newestFiles)
 
-    # Determine which files would be filtered by .hide files  
+    # Determine which files would be filtered by .hide files
     visibleByHide = removeHiddenFiles(allFiles)
     hiddenByHideFiles = set(allFiles) - set(visibleByHide)
 
@@ -968,7 +998,9 @@ def main():
     easySongs = getEasySongs(allFiles)
 
     # Precompute searchable metadata pulled from each ChordPro file so the HTML can expose it to the search UI
-    choproSearchIndex = defaultdict(lambda: {"keywords": set(), "titles": set(), "subtitles": set(), "lyrics": []})
+    choproSearchIndex = defaultdict(
+        lambda: {"keywords": set(), "titles": set(), "subtitles": set(), "lyrics": []}
+    )
     for filePath in allFiles:
         if ext(filePath).lower() == ".chopro":
             metadata = extract_chopro_metadata(filePath)
@@ -1003,7 +1035,7 @@ def main():
 
     downloadExtensions = [".cho", ".chopro"]
     sortedTitles = sorted(allTitles, key=(lambda e: dictCompare(e[0]).casefold()))
-    with open(outputFile, "w", encoding='utf-8') as htmlOutput:
+    with open(outputFile, "w", encoding="utf-8") as htmlOutput:
         htmlOutput.writelines(header)
         if intro:
             htmlOutput.writelines(introduction)
@@ -1022,19 +1054,21 @@ def main():
             try:
                 # Check if this song is marked as easy
                 isEasy = any(str(os.path.splitext(file)[0]).lower() in easySongs for file in f[1:])
-                
+
                 # Check if this song has additional versions hidden by the default filter
                 # Used to determine whether to render a per-song "show all versions" button
                 relevantDownloads = [file for file in f[1:] if ext(file) not in markerExtensions]
                 hiddenDownloads = [file for file in relevantDownloads if file in defaultHiddenFiles]
-                visibleDownloads = [file for file in relevantDownloads if file not in defaultHiddenFiles]
+                visibleDownloads = [
+                    file for file in relevantDownloads if file not in defaultHiddenFiles
+                ]
                 hasAdditionalVersions = bool(visibleDownloads) and bool(hiddenDownloads)
                 forceRevealHiddenDownloads = not visibleDownloads and bool(hiddenDownloads)
-                
+
                 # Only mark as hidden-version if there are additional filtered versions available
                 # This helps users notice that more downloads exist in the same row
                 isHiddenVersion = hasAdditionalVersions
-                
+
                 # Build CSS classes
                 cssClasses = []
                 if isEasy:
@@ -1050,23 +1084,23 @@ def main():
                     attributeParts.append(f'class="{" ".join(cssClasses)}"')
 
                 if titleMetadata:
-                  metadataTokens = []
-                  if titleMetadata["keywords"]:
-                    metadataTokens.append(" ".join(sorted(titleMetadata["keywords"])))
-                  if titleMetadata["titles"]:
-                    metadataTokens.append(" ".join(sorted(titleMetadata["titles"])))
-                  if titleMetadata["subtitles"]:
-                    metadataTokens.append(" ".join(sorted(titleMetadata["subtitles"])))
+                    metadataTokens = []
+                    if titleMetadata["keywords"]:
+                        metadataTokens.append(" ".join(sorted(titleMetadata["keywords"])))
+                    if titleMetadata["titles"]:
+                        metadataTokens.append(" ".join(sorted(titleMetadata["titles"])))
+                    if titleMetadata["subtitles"]:
+                        metadataTokens.append(" ".join(sorted(titleMetadata["subtitles"])))
 
-                  if metadataTokens:
-                    metadataValue = escape(" ".join(metadataTokens).lower(), quote=True)
-                    attributeParts.append(f'data-metadata="{metadataValue}"')
+                    if metadataTokens:
+                        metadataValue = escape(" ".join(metadataTokens).lower(), quote=True)
+                        attributeParts.append(f'data-metadata="{metadataValue}"')
 
-                  if titleMetadata["lyrics"]:
-                    lyricsValue = escape(" ".join(titleMetadata["lyrics"]).lower(), quote=True)
-                    attributeParts.append(f'data-lyrics="{lyricsValue}"')
+                    if titleMetadata["lyrics"]:
+                        lyricsValue = escape(" ".join(titleMetadata["lyrics"]).lower(), quote=True)
+                        attributeParts.append(f'data-lyrics="{lyricsValue}"')
 
-                attrString = f" {' '.join(attributeParts)}" if attributeParts else ''
+                attrString = f" {' '.join(attributeParts)}" if attributeParts else ""
 
                 htmlOutput.write(f"<tr{attrString}>")
                 # conditionally include row number column
@@ -1083,29 +1117,37 @@ def main():
                 # the remainder of f's elements are files that match the title in f[0]
                 # Sort the files to ensure consistent ordering across operating systems
                 # Sort by extension first, then by the complete normalized path
-                sorted_files = sorted(f[1:], key=lambda x: (ext(x), x.lower().replace('\\', '/')))
+                sorted_files = sorted(f[1:], key=lambda x: (ext(x), x.lower().replace("\\", "/")))
                 for i in sorted_files:
                     # Skip .easy and .hide marker files - they shouldn't appear as downloads
                     if ext(i) in [".easy", ".hide"]:
                         continue
-                    
+
                     # Determine if this file is hidden by the current filter method
                     isHiddenByDefault = i in defaultHiddenFiles
                     shouldForceVisible = forceRevealHiddenDownloads and isHiddenByDefault
-                    fileClass = '' if shouldForceVisible else (' class="additional-version"' if isHiddenByDefault else '')
-                    
+                    fileClass = (
+                        ""
+                        if shouldForceVisible
+                        else (' class="additional-version"' if isHiddenByDefault else "")
+                    )
+
                     if ext(i) == ".urltxt":
-                      with open(i, "r") as urlFile:
-                        label = urlFile.readline().strip()
-                        address = urlFile.readline().strip()
-                      busted_address = append_cache_bust(address)
-                      htmlOutput.write(
-                        f"<a href=\"{escape(busted_address, quote=True)}\" target=\"_blank\"{fileClass}>{escape(label)}</a><br>\n"
-                      )
+                        with open(i, "r") as urlFile:
+                            label = urlFile.readline().strip()
+                            address = urlFile.readline().strip()
+                        busted_address = append_cache_bust(address)
+                        htmlOutput.write(
+                            f'<a href="{escape(busted_address, quote=True)}" target="_blank"{fileClass}>{escape(label)}</a><br>\n'
+                        )
                     elif ext(i) in downloadExtensions:
-                        htmlOutput.write(f" <a href=\"{str(i).replace(' ','%20')}?v={now}\" download=\"{filename(i)}{ext(i)}\" target=\"_blank\"{fileClass}>{ext(i)}</a><br>\n")
+                        htmlOutput.write(
+                            f" <a href=\"{str(i).replace(' ','%20')}?v={now}\" download=\"{filename(i)}{ext(i)}\" target=\"_blank\"{fileClass}>{ext(i)}</a><br>\n"
+                        )
                     else:
-                        htmlOutput.write(f"  <a href=\"{str(i).replace(' ','%20')}?v={now}\" target=\"_blank\"{fileClass}>{ext(i)}</a><br>\n")
+                        htmlOutput.write(
+                            f"  <a href=\"{str(i).replace(' ','%20')}?v={now}\" target=\"_blank\"{fileClass}>{ext(i)}</a><br>\n"
+                        )
 
                 # close each table row (and the table data containing file links)
                 htmlOutput.write("</td></tr>\n")
@@ -1113,7 +1155,7 @@ def main():
             except:
                 print(f"failed to write {f[1:]}")
 
-        #close the table etc.
+        # close the table etc.
         htmlOutput.write("</tbody>")
         htmlOutput.write("</table>")
         htmlOutput.write(searchScript)
