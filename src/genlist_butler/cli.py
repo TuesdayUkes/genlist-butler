@@ -937,9 +937,7 @@ def main():
     const fuseNoLyrics = new Fuse(rowCache, {
         ...fuseBaseOptions,
         keys: [
-            { name: 'titleText', weight: 0.9 },
-            { name: 'metadataText', weight: 0.05 },
-            { name: 'rowText', weight: 0.05 }
+            { name: 'titleText', weight: 1 }
         ]
     });
 
