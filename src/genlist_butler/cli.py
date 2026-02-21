@@ -922,7 +922,7 @@ def main():
     const fuseBaseOptions = {
         includeScore: true,
         ignoreLocation: true,
-        threshold: 0.5,
+        threshold: 0.4,
         minMatchCharLength: 3,
         keys: [
             { name: 'titleText', weight: 0.5 },
@@ -936,9 +936,9 @@ def main():
     const fuseNoLyrics = new Fuse(rowCache, {
         ...fuseBaseOptions,
         keys: [
-            { name: 'titleText', weight: 0.6 },
-            { name: 'metadataText', weight: 0.25 },
-            { name: 'rowText', weight: 0.15 }
+            { name: 'titleText', weight: 0.9 },
+            { name: 'metadataText', weight: 0.05 },
+            { name: 'rowText', weight: 0.05 }
         ]
     });
 
