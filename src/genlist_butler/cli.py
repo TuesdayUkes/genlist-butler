@@ -922,7 +922,7 @@ def main():
     const fuseBaseOptions = {
         includeScore: true,
         ignoreLocation: true,
-        threshold: 0.3,
+        threshold: 0.5,
         minMatchCharLength: 3,
         keys: [
             { name: 'titleText', weight: 0.5 },
@@ -971,6 +971,9 @@ def main():
             const hiddenRows = [];
             const visibleSet = new Set();
             const fuse = lyricSearchEnabled ? fuseAll : fuseNoLyrics;
+            if (lyricSearchEnabled) {
+                // Fuse index includes lyrics.
+            }
 
             let matches = [];
             if (query) {
