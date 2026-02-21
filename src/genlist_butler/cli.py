@@ -823,12 +823,14 @@ def main():
     searchScript = (
         """
   </section>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 <script>
     const searchInput = document.getElementById('searchInput');
     const easyFilter = document.getElementById('easyFilter');
     const lyricSearchToggle = document.getElementById('lyricSearchToggle');
     const table = document.getElementById('dataTable');
-    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    const tbody = table.tBodies[0];
+    const rows = tbody.getElementsByTagName('tr');
     const searchStats = document.getElementById('searchStats');
     const visibleCountSpan = document.getElementById('visibleCount');
     const totalCountSpan = document.getElementById('totalCount');
@@ -852,8 +854,93 @@ def main():
         .toLowerCase();
     }
 
+    function scoreTokenInField(token, field) {
+        if (!token || !field) {
+            return 0;
+        }
+
+        const index = field.indexOf(token);
+        if (index >= 0) {
+            const proximity = Math.max(0, 1 - index / Math.max(field.length, 1));
+            return 100 + proximity * 10;
+        }
+
+        if (token.length >= 3 && fuzzyMatch(token, field)) {
+            return 40;
+        }
+
+        return 0;
+    }
+
+    function scoreRowMatch(tokens, cache, lyricSearchEnabled) {
+        if (!tokens.length) {
+            return 0;
+        }
+
+        const fields = lyricSearchEnabled
+            ? [
+                { text: cache.titleText, weight: 3 },
+                { text: cache.metadataText, weight: 2 },
+                { text: cache.rowText, weight: 1 },
+                { text: cache.lyricText, weight: 1 }
+              ]
+            : [
+                { text: cache.titleText, weight: 3 }
+              ];
+
+        let totalScore = 0;
+        tokens.forEach(token => {
+            let bestScore = 0;
+            fields.forEach(field => {
+                const score = scoreTokenInField(token, field.text) * field.weight;
+                if (score > bestScore) {
+                    bestScore = score;
+                }
+            });
+            totalScore += bestScore;
+        });
+
+        return totalScore;
+    }
+
     // Set total count
-    totalCountSpan.textContent = rows.length;
+    const rowList = Array.from(rows);
+    totalCountSpan.textContent = rowList.length;
+    const rowCache = rowList.map((row, index) => {
+        const titleCell = row.cells[1];
+        return {
+            row,
+            originalIndex: index,
+            isEasy: row.classList.contains('easy-song'),
+            rowText: normalizeSearchText(row.textContent),
+            metadataText: normalizeSearchText(row.dataset.metadata || ''),
+            lyricText: normalizeSearchText(row.dataset.lyrics || ''),
+            titleText: titleCell ? normalizeSearchText(titleCell.textContent) : ''
+        };
+    });
+
+    const fuseBaseOptions = {
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.3,
+        minMatchCharLength: 3,
+        keys: [
+            { name: 'titleText', weight: 0.5 },
+            { name: 'metadataText', weight: 0.2 },
+            { name: 'rowText', weight: 0.2 },
+            { name: 'lyricText', weight: 0.1 }
+        ]
+    };
+
+    const fuseAll = new Fuse(rowCache, fuseBaseOptions);
+    const fuseNoLyrics = new Fuse(rowCache, {
+        ...fuseBaseOptions,
+        keys: [
+            { name: 'titleText', weight: 0.6 },
+            { name: 'metadataText', weight: 0.25 },
+            { name: 'rowText', weight: 0.15 }
+        ]
+    });
 
     function updateSearchStats(visibleCount) {
       visibleCountSpan.textContent = visibleCount;
@@ -871,7 +958,7 @@ def main():
     }
 
     function filterRows() {
-        const searchFilter = normalizeSearchText(searchInput.value);
+        const query = normalizeSearchText(searchInput.value);
         const easyOnly = easyFilter.checked;
         const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
         let visibleCount = 0;
@@ -880,35 +967,56 @@ def main():
         table.classList.add('table-loading');
 
         setTimeout(() => {
-            for (let i = 0; i < rows.length; i++) {
-                let isEasy = rows[i].classList.contains('easy-song');
-                let showBySearch = true;
+            const visibleRows = [];
+            const hiddenRows = [];
+            const visibleSet = new Set();
+            const fuse = lyricSearchEnabled ? fuseAll : fuseNoLyrics;
 
-                if (searchFilter) {
-                    if (lyricSearchEnabled) {
-                        // Search in title, metadata, and lyrics
-                        const rowText = normalizeSearchText(rows[i].textContent);
-                        const metadataText = normalizeSearchText(rows[i].dataset.metadata || '');
-                        const lyricText = normalizeSearchText(rows[i].dataset.lyrics || '');
-                        showBySearch = rowText.includes(searchFilter) || metadataText.includes(searchFilter) || lyricText.includes(searchFilter);
-                    } else {
-                        // Search only in song title (second column)
-                        const titleCell = rows[i].cells[1];
-                        const titleText = titleCell ? normalizeSearchText(titleCell.textContent) : '';
-                        showBySearch = titleText.includes(searchFilter);
-                    }
-                }
-
-                let showByEasy = !easyOnly || isEasy;
-
-                const shouldShow = showBySearch && showByEasy;
-                rows[i].style.display = shouldShow ? '' : 'none';
-
-                if (shouldShow) {
-                    visibleCount++;
-                    applyAdditionalVersionVisibility(rows[i]);
-                }
+            let matches = [];
+            if (query) {
+                matches = fuse.search(query).map(result => ({
+                    row: result.item.row,
+                    originalIndex: result.item.originalIndex,
+                    isEasy: result.item.isEasy,
+                    score: result.score ?? 0
+                }));
+            } else {
+                matches = rowCache.map(item => ({
+                    row: item.row,
+                    originalIndex: item.originalIndex,
+                    isEasy: item.isEasy,
+                    score: 0
+                }));
             }
+
+            matches.forEach(match => {
+                if (easyOnly && !match.isEasy) {
+                    return;
+                }
+                match.row.style.display = '';
+                applyAdditionalVersionVisibility(match.row);
+                visibleRows.push(match);
+                visibleSet.add(match.row);
+            });
+
+            visibleCount = visibleRows.length;
+
+            rowCache.forEach(item => {
+                if (visibleSet.has(item.row)) {
+                    return;
+                }
+                item.row.style.display = 'none';
+                hiddenRows.push({ row: item.row, originalIndex: item.originalIndex });
+            });
+
+            if (!query) {
+                visibleRows.sort((a, b) => a.originalIndex - b.originalIndex);
+            }
+
+            hiddenRows.sort((a, b) => a.originalIndex - b.originalIndex);
+
+            visibleRows.forEach(item => tbody.appendChild(item.row));
+            hiddenRows.forEach(item => tbody.appendChild(item.row));
 
             updateSearchStats(visibleCount);
             table.classList.remove('table-loading');
