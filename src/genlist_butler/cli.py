@@ -847,9 +847,10 @@ def main():
         normalized = normalized.normalize('NFKD');
       }
 
-      return normalized
+            return normalized
         .replace(/[\u2018\u2019\u201a\u201b\u2032\u2035\u02bc]/g, "'")
         .replace(/[\u201c\u201d\u201e\u201f\u2033\u2036]/g, '"')
+                .replace(/'/g, '')
         .replace(/\u00a0/g, ' ')
         .toLowerCase();
     }
