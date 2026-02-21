@@ -972,7 +972,11 @@ def main():
             const visibleSet = new Set();
             const fuse = lyricSearchEnabled ? fuseAll : fuseNoLyrics;
             if (lyricSearchEnabled) {
-                // Fuse index includes lyrics.
+                // Search in title, metadata, and lyrics
+                // rowText.includes(searchFilter)
+            } else {
+                // Search only in song title (second column)
+                // titleText.includes(searchFilter)
             }
 
             let matches = [];
