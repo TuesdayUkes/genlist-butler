@@ -811,7 +811,7 @@ def main():
         <label for="easyFilter">🎵 Show only easy songs (perfect for beginners!)</label>
     </div>
     <div class="filter-checkbox">
-      <input type="checkbox" id="lyricSearchToggle" checked>
+      <input type="checkbox" id="lyricSearchToggle">
       <label for="lyricSearchToggle">📝 Include lyric search (may be slower)</label>
     </div>
     <div id="searchStats" class="search-stats" style="display: none;">
@@ -923,7 +923,7 @@ def main():
     const fuseBaseOptions = {
         includeScore: true,
         ignoreLocation: true,
-        threshold: 0.4,
+        threshold: 0.3,
         minMatchCharLength: 3,
         keys: [
             { name: 'titleText', weight: 0.5 },
@@ -937,7 +937,10 @@ def main():
     const fuseNoLyrics = new Fuse(rowCache, {
         ...fuseBaseOptions,
         keys: [
-            { name: 'titleText', weight: 1 }
+            { name: 'titleText', weight: 0.85 },
+            { name: 'metadataText', weight: 0.1 },
+            { name: 'rowText', weight: 0.04 },
+            { name: 'lyricText', weight: 0.10 }
         ]
     });
 
