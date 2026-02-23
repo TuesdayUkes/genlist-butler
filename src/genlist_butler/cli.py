@@ -9,7 +9,6 @@ with git-based version tracking to show only the newest versions of each song.
 import subprocess
 from first import first
 from pathlib import Path
-from posixpath import basename, splitext
 import sys
 import os
 import argparse
@@ -855,55 +854,6 @@ def main():
         .toLowerCase();
     }
 
-    function scoreTokenInField(token, field) {
-        if (!token || !field) {
-            return 0;
-        }
-
-        const index = field.indexOf(token);
-        if (index >= 0) {
-            const proximity = Math.max(0, 1 - index / Math.max(field.length, 1));
-            return 100 + proximity * 10;
-        }
-
-        if (token.length >= 3 && fuzzyMatch(token, field)) {
-            return 40;
-        }
-
-        return 0;
-    }
-
-    function scoreRowMatch(tokens, cache, lyricSearchEnabled) {
-        if (!tokens.length) {
-            return 0;
-        }
-
-        const fields = lyricSearchEnabled
-            ? [
-                { text: cache.titleText, weight: 3 },
-                { text: cache.metadataText, weight: 2 },
-                { text: cache.rowText, weight: 1 },
-                { text: cache.lyricText, weight: 1 }
-              ]
-            : [
-                { text: cache.titleText, weight: 3 }
-              ];
-
-        let totalScore = 0;
-        tokens.forEach(token => {
-            let bestScore = 0;
-            fields.forEach(field => {
-                const score = scoreTokenInField(token, field.text) * field.weight;
-                if (score > bestScore) {
-                    bestScore = score;
-                }
-            });
-            totalScore += bestScore;
-        });
-
-        return totalScore;
-    }
-
     // Set total count
     const rowList = Array.from(rows);
     totalCountSpan.textContent = rowList.length;
@@ -923,7 +873,7 @@ def main():
     const fuseBaseOptions = {
         includeScore: true,
         ignoreLocation: true,
-        threshold: 0.3,
+        threshold: 0.4,
         minMatchCharLength: 3,
         keys: [
             { name: 'titleText', weight: 0.5 },
