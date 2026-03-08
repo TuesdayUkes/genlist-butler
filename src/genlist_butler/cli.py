@@ -889,8 +889,7 @@ def main():
         keys: [
             { name: 'titleText', weight: 0.85 },
             { name: 'metadataText', weight: 0.1 },
-            { name: 'rowText', weight: 0.04 },
-            { name: 'lyricText', weight: 0.10 }
+            { name: 'rowText', weight: 0.04 }
         ]
     });
 
@@ -1031,7 +1030,7 @@ def main():
         createPDFs()
 
     # Pre-convert extensions to lowercase for faster comparison
-    extensions = {".pdf", ".chopro", ".cho", ".mscz", ".urltxt", ".hide", ".easy", ".mp3", ".m4a"}
+    extensions = {".html", ".pdf", ".chopro", ".cho", ".mscz", ".urltxt", ".hide", ".easy", ".mp3", ".m4a"}
     allFiles = []
     # Use a single rglob call and filter more efficiently
     for p in Path(musicFolder).rglob("*"):
