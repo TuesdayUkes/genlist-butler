@@ -522,6 +522,12 @@ def main():
         default=True,
         help="Include/exclude row numbers in the generated table (default: include)",
     )
+    parser.add_argument(
+        "--html",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include/exclude .html files in the catalog (default: include)",
+    )
     args = parser.parse_args()
 
     print("Generating Music List (this takes a few seconds)", file=sys.stderr)
@@ -534,6 +540,7 @@ def main():
     genPDF = args.genPDF
     filterMethod = args.filter
     showLineNumbers = args.line_numbers
+    includeHtml = args.html
 
     now = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
@@ -1030,7 +1037,9 @@ def main():
         createPDFs()
 
     # Pre-convert extensions to lowercase for faster comparison
-    extensions = {".html", ".pdf", ".chopro", ".cho", ".mscz", ".urltxt", ".hide", ".easy", ".mp3", ".m4a"}
+    extensions = {".pdf", ".chopro", ".cho", ".mscz", ".urltxt", ".hide", ".easy", ".mp3", ".m4a"}
+    if includeHtml:
+        extensions.add(".html")
     allFiles = []
     # Use a single rglob call and filter more efficiently
     for p in Path(musicFolder).rglob("*"):
