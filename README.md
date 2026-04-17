@@ -81,6 +81,25 @@ genlist ./music index.html --genPDF
 - `--intro / --no-intro` - Include/exclude introduction section (default: include)
 - `--genPDF / --no-genPDF` - Generate PDFs from ChordPro files (default: no)
 - `--forcePDF / --no-forcePDF` - Regenerate all PDFs even if they exist (default: no)
+- `--html / --no-html` - Include/exclude `.html` files in the catalog (default: include)
+
+### Supported File Extensions
+
+GenList Butler scans for these file types:
+
+- `.chopro`, `.cho` (ChordPro)
+- `.pdf`
+- `.mscz` (MuseScore)
+- `.mp3`, `.m4a` (audio)
+- `.urltxt` (two-line link files: label on line 1, URL on line 2)
+- `.html` (optional, controlled by `--html`)
+
+Marker files (not listed as downloads):
+
+- `.easy` (marks a song as easy)
+- `.hide` (hides other files with the same base name)
+
+**About optional `.html` behavior:** `.html` files are included by default when scanning, and appear as regular links in the downloads column. Use `--no-html` if you want to exclude existing HTML files (for example, old catalogs or web pages) from the list.
 
 ### File Markers
 

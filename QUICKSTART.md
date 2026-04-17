@@ -26,7 +26,7 @@ genlist-butler /path/to/music index.html
 
 This will:
 1. Scan the music folder recursively
-2. Find all music files (.pdf, .chopro, .cho, .mscz, etc.)
+2. Find all music files (see supported extensions below)
 3. Use git history to show only the newest versions
 4. Generate an interactive HTML catalog
 
@@ -118,6 +118,24 @@ Improve search results by embedding metadata directly in your `.chopro` charts:
 - `{keywords:}` (or `# keywords:` comments) turn into searchable tags.
 - Lyrics are also indexed, but users can uncheck **Include lyric search** in the UI for faster filtering if desired.
 
+## Supported File Extensions
+
+GenList Butler scans for these file types:
+
+- `.chopro`, `.cho` (ChordPro)
+- `.pdf`
+- `.mscz` (MuseScore)
+- `.mp3`, `.m4a` (audio)
+- `.urltxt` (two-line link files: label on line 1, URL on line 2)
+- `.html` (optional, controlled by `--html`)
+
+Marker files (not listed as downloads):
+
+- `.easy` (marks a song as easy)
+- `.hide` (hides other files with the same base name)
+
+**Optional `.html` behavior:** `.html` files are included by default when scanning, and appear as regular links in the downloads column. Use `--no-html` if you want to exclude HTML files (for example, old catalogs or web pages) from the list.
+
 ## Folder Structure Example
 
 Here's a recommended folder structure:
@@ -173,7 +191,7 @@ Example `HTMLheader.txt`:
 ### "No files found"
 
 - Check that your music folder contains supported file types
-- Supported: `.pdf`, `.chopro`, `.cho`, `.mscz`, `.urltxt`
+- Supported: `.pdf`, `.chopro`, `.cho`, `.mscz`, `.mp3`, `.m4a`, `.urltxt` (plus optional `.html` with `--html`)
 
 ### "Git command failed"
 
