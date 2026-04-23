@@ -528,6 +528,12 @@ def main():
         default=True,
         help="Include/exclude .html files in the catalog (default: include)",
     )
+    parser.add_argument(
+        "--SortBy",
+        choices=["date", "title"],
+        default="title",
+        help="Sort order: 'title' (default, alphabetical) or 'date' (newest-first by commit date)",
+    )
     args = parser.parse_args()
 
     print("Generating Music List (this takes a few seconds)", file=sys.stderr)
@@ -541,6 +547,7 @@ def main():
     filterMethod = args.filter
     showLineNumbers = args.line_numbers
     includeHtml = args.html
+    sortBy = args.SortBy
 
     now = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
@@ -1109,7 +1116,26 @@ def main():
     allTitles = list(titleDict.values())
 
     downloadExtensions = [".cho", ".chopro"]
-    sortedTitles = sorted(allTitles, key=(lambda e: dictCompare(e[0]).casefold()))
+    if sortBy == "date":
+        allSongFiles = [
+            f for g in allTitles for f in g[1:] if ext(f).lower() not in markerExtensions
+        ]
+        print(
+            f"Fetching git timestamps for {len(allSongFiles)} files for date sorting...",
+            file=sys.stderr,
+        )
+        songTimestamps = getAllGitTimestamps(allSongFiles)
+
+        def maxTimestampForGroup(g):
+            paths = [f for f in g[1:] if ext(f).lower() not in markerExtensions]
+            ts_list = [songTimestamps.get(f, 0) for f in paths]
+            return max(ts_list) if ts_list else 0
+
+        titleGroupTimestamps = {dictCompare(g[0]): maxTimestampForGroup(g) for g in allTitles}
+        sortedTitles = sorted(allTitles, key=maxTimestampForGroup, reverse=True)
+    else:
+        titleGroupTimestamps = {}
+        sortedTitles = sorted(allTitles, key=(lambda e: dictCompare(e[0]).casefold()))
     with open(outputFile, "w", encoding="utf-8") as htmlOutput:
         htmlOutput.writelines(header)
         if intro:
@@ -1184,6 +1210,14 @@ def main():
                 # song title column + optional per-row version toggle
                 htmlOutput.write("  <td>")
                 htmlOutput.write(f"{f[0]}")
+                if sortBy == "date":
+                    ts = titleGroupTimestamps.get(dictCompare(f[0]), 0)
+                    if ts:
+                        dt = datetime.fromtimestamp(ts)
+                        date_str = dt.strftime("%m/%d/%Y")
+                        htmlOutput.write(
+                            f'<br><small style="color: #718096; font-weight: normal;">updated {date_str}</small>'
+                        )
                 if hasAdditionalVersions:
                     htmlOutput.write(
                         ' <button type="button" class="show-all-versions-btn" data-expanded="false" aria-expanded="false">Show all versions</button>'
