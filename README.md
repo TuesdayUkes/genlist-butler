@@ -78,10 +78,28 @@ genlist ./music index.html --genPDF
   - `none`: Show all files
   - `hidden`: Hide files with `.hide` extension
   - `timestamp`: Show only newest versions based on git history
+- `--SortBy [title|date]` - Sort order when no `songorder.txt` is present: `title` (default, alphabetical) or `date` (newest-first by git commit date)
 - `--intro / --no-intro` - Include/exclude introduction section (default: include)
 - `--genPDF / --no-genPDF` - Generate PDFs from ChordPro files (default: no)
 - `--forcePDF / --no-forcePDF` - Regenerate all PDFs even if they exist (default: no)
+- `--line-numbers / --no-line-numbers` - Include/exclude row numbers (default: include)
 - `--html / --no-html` - Include/exclude `.html` files in the catalog (default: include)
+
+### Song Order File
+
+Place a plain-text file named `songorder.txt` in the music folder to control the order of rows in the generated table:
+
+```
+# Lines starting with # are ignored
+Amazing Grace
+Yesterday
+Hotel California Em
+```
+
+- Songs listed in `songorder.txt` appear first, in the specified order.
+- Songs discovered in the folder but **not** listed are appended after the ordered songs, sorted by the normal `--SortBy` method.
+- Title matching is case-insensitive and ignores leading articles (A / An / The) and punctuation.
+- If `songorder.txt` is absent, the catalog is sorted entirely by `--SortBy` as before.
 
 ### Supported File Extensions
 
@@ -152,7 +170,8 @@ The generated HTML will use your custom styling while maintaining all the intera
    - Uses git history to find the newest version of each file
    - Respects `.hide` marker files
    - Processes `.easy` marker files for special highlighting
-4. **Generates** an interactive HTML page with:
+4. **Orders** songs using `songorder.txt` if present, otherwise sorts by title or date
+5. **Generates** an interactive HTML page with:
    - Searchable song list
    - Download links for all file formats
    - Optional filtering for easy songs

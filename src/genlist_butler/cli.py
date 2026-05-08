@@ -24,7 +24,9 @@ DEFAULT_HTML_HEADER = """<!DOCTYPE html>
 <head>
 	<Title>Tuesday Ukes' archive of ukulele songs and chords</title>
 
-	<meta name="description" content="Free downloads of ukulele tabs and chords for hundreds of songs, from Tin Pan Alley to today's most-popular hit tunes, from the Tuesday Uke Group.">
+	<meta name="description"
+	  content="Free downloads of ukulele tabs and chords for hundreds of songs,
+	  from Tin Pan Alley to today's most-popular hit tunes, from the Tuesday Uke Group.">
 
 	<meta charset="utf-8">
 	<link rel="canonical" href="https://tuesdayukes.org/ukulele-song-archive.html/">
@@ -34,7 +36,7 @@ DEFAULT_HTML_HEADER = """<!DOCTYPE html>
   <link rel="stylesheet" href="styles/main.css">
 <style>
 /* Modern body styling */
-body.custom-background { 
+body.custom-background {
   background: linear-gradient(135deg, var(--background) 0%, #edf2f7 100%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
@@ -240,27 +242,27 @@ h2 {
   .site-inner {
     padding: 1rem;
   }
-  
+
   h1 {
     font-size: 2rem;
   }
-  
+
   .search-controls {
     padding: 1.5rem;
   }
-  
+
   #searchInput {
     max-width: 100%;
   }
-  
+
   #dataTable {
     font-size: 14px;
   }
-  
+
   #dataTable td {
     padding: 0.75rem 0.5rem;
   }
-  
+
   #dataTable.with-line-numbers td:first-child {
     width: 60px;
   }
@@ -434,7 +436,8 @@ def _sanitize_lyric_text(line):
 
     without_chords = CHORD_PATTERN.sub("", line)
 
-    # Chord writers often split syllables like merri-[D7]-ly; join those while keeping true hyphenated words readable
+    # Chord writers often split syllables like merri-[D7]-ly;
+    # join those while keeping true hyphenated words readable
     def _normalize_hyphenation(text):
         pattern = re.compile(r"(\b\w+)(?:\s*-\s*)+(\w+\b)")
 
@@ -488,7 +491,8 @@ def extract_chopro_metadata(file_path):
 def main():
     """Main entry point for genlist CLI"""
     parser = argparse.ArgumentParser(
-        description="Generate HTML catalogs from music notation files with git-based version tracking"
+        description="Generate HTML catalogs from music notation files"
+        " with git-based version tracking"
     )
     parser.add_argument("musicFolder", help="Path to the directory containing music files")
     parser.add_argument("outputFile", help="Path where the HTML catalog will be written")
@@ -514,7 +518,8 @@ def main():
         "--filter",
         choices=["none", "hidden", "timestamp"],
         default="timestamp",
-        help="Filter method: 'none' (show all files), 'hidden' (hide files with .hide), 'timestamp' (show newest versions only)",
+        help="Filter method: 'none' (show all files), 'hidden' (hide files with .hide),"
+        " 'timestamp' (show newest versions only)",
     )
     parser.add_argument(
         "--line-numbers",
@@ -630,7 +635,7 @@ def main():
             else:
                 # If no git repo found, fall back to mtimes
                 return {f: int(os.path.getmtime(f)) for f in files}
-        except:
+        except Exception:
             # If git command fails, fall back to mtimes
             return {f: int(os.path.getmtime(f)) for f in files}
 
@@ -644,7 +649,7 @@ def main():
                     # Normalize path separators for git
                     rel_path = rel_path.replace("\\", "/")
                     relative_files[rel_path] = f
-                except:
+                except Exception:
                     # If we can't get relative path, fall back to mtime
                     timestamps[f] = int(os.path.getmtime(f))
 
@@ -714,7 +719,8 @@ def main():
         # Get all timestamps in batch if there are any files with duplicates
         if filesNeedingTimestamps:
             print(
-                f"Fetching git timestamps for {len(filesNeedingTimestamps)} files with duplicates...",
+                f"Fetching git timestamps for"
+                f" {len(filesNeedingTimestamps)} files with duplicates...",
                 file=sys.stderr,
             )
             gitTimestamps = getAllGitTimestamps(filesNeedingTimestamps)
@@ -818,7 +824,9 @@ def main():
     searchControls = """
 <div class="search-controls">
     <h2>Search & Filter</h2>
-    <input type="text" id="searchInput" placeholder="🔍 Search songs by title, keyword, or lyrics..." autocorrect="off" autocapitalize="off" spellcheck="false">
+    <input type="text" id="searchInput"
+      placeholder="🔍 Search songs by title, keyword, or lyrics..."
+      autocorrect="off" autocapitalize="off" spellcheck="false">
     <div class="filter-checkbox">
         <input type="checkbox" id="easyFilter">
         <label for="easyFilter">🎵 Show only easy songs (perfect for beginners!)</label>
@@ -909,7 +917,8 @@ def main():
 
     function updateSearchStats(visibleCount) {
       visibleCountSpan.textContent = visibleCount;
-      const showStats = searchInput.value || easyFilter.checked || (lyricSearchToggle && !lyricSearchToggle.checked);
+      const showStats = searchInput.value || easyFilter.checked
+        || (lyricSearchToggle && !lyricSearchToggle.checked);
       searchStats.style.display = showStats ? 'block' : 'none';
     }
 
@@ -1033,7 +1042,7 @@ def main():
             link.style.display = 'none';
         });
     }
-    
+
     // Update initial stats
     filterRows();
 </script>
@@ -1079,7 +1088,7 @@ def main():
 
     easySongs = getEasySongs(allFiles)
 
-    # Precompute searchable metadata pulled from each ChordPro file so the HTML can expose it to the search UI
+    # Precompute searchable metadata from each ChordPro file to expose to the search UI
     choproSearchIndex = defaultdict(
         lambda: {"keywords": set(), "titles": set(), "subtitles": set(), "lyrics": []}
     )
@@ -1136,6 +1145,31 @@ def main():
     else:
         titleGroupTimestamps = {}
         sortedTitles = sorted(allTitles, key=(lambda e: dictCompare(e[0]).casefold()))
+
+    # Apply songorder.txt ordering if the file exists in musicFolder
+    songOrderFile = os.path.join(musicFolder, "songorder.txt")
+    if os.path.exists(songOrderFile):
+        print(f"Using song order from {songOrderFile}", file=sys.stderr)
+        with open(songOrderFile, "r", encoding="utf-8") as f:
+            orderedTitles = [
+                line.strip() for line in f if line.strip() and not line.startswith("#")
+            ]
+        orderedKeys = [dictCompare(t) for t in orderedTitles]
+        titlesByKey = {dictCompare(g[0]): g for g in sortedTitles}
+        ordered = []
+        for key in orderedKeys:
+            if key in titlesByKey:
+                ordered.append(titlesByKey.pop(key))
+            else:
+                print(
+                    f"Warning: '{key}' in songorder.txt not found among discovered songs",
+                    file=sys.stderr,
+                )
+        # Append remaining songs (those not listed in songorder.txt) in their existing sort order
+        for g in sortedTitles:
+            if dictCompare(g[0]) in titlesByKey:
+                ordered.append(g)
+        sortedTitles = ordered
     with open(outputFile, "w", encoding="utf-8") as htmlOutput:
         htmlOutput.writelines(header)
         if intro:
@@ -1216,11 +1250,13 @@ def main():
                         dt = datetime.fromtimestamp(ts)
                         date_str = dt.strftime("%m/%d/%Y")
                         htmlOutput.write(
-                            f'<br><small style="color: #718096; font-weight: normal;">updated {date_str}</small>'
+                            f'<br><small style="color: #718096; font-weight: normal;">'
+                            f"updated {date_str}</small>"
                         )
                 if hasAdditionalVersions:
                     htmlOutput.write(
-                        ' <button type="button" class="show-all-versions-btn" data-expanded="false" aria-expanded="false">Show all versions</button>'
+                        ' <button type="button" class="show-all-versions-btn"'
+                        ' data-expanded="false" aria-expanded="false">Show all versions</button>'
                     )
                 htmlOutput.write("</td>\n<td>")
                 # the remainder of f's elements are files that match the title in f[0]
@@ -1247,21 +1283,27 @@ def main():
                             address = urlFile.readline().strip()
                         busted_address = append_cache_bust(address)
                         htmlOutput.write(
-                            f'<a href="{escape(busted_address, quote=True)}" target="_blank"{fileClass}>{escape(label)}</a><br>\n'
+                            f'<a href="{escape(busted_address, quote=True)}"'
+                            f' target="_blank"{fileClass}>{escape(label)}</a><br>\n'
                         )
                     elif ext(i) in downloadExtensions:
+                        url = str(i).replace(" ", "%20")
                         htmlOutput.write(
-                            f" <a href=\"{str(i).replace(' ','%20')}?v={now}\" download=\"{filename(i)}{ext(i)}\" target=\"_blank\"{fileClass}>{ext(i)}</a><br>\n"
+                            f' <a href="{url}?v={now}"'
+                            f' download="{filename(i)}{ext(i)}"'
+                            f' target="_blank"{fileClass}>{ext(i)}</a><br>\n'
                         )
                     else:
+                        url = str(i).replace(" ", "%20")
                         htmlOutput.write(
-                            f"  <a href=\"{str(i).replace(' ','%20')}?v={now}\" target=\"_blank\"{fileClass}>{ext(i)}</a><br>\n"
+                            f'  <a href="{url}?v={now}"'
+                            f' target="_blank"{fileClass}>{ext(i)}</a><br>\n'
                         )
 
                 # close each table row (and the table data containing file links)
                 htmlOutput.write("</td></tr>\n")
                 row_number += 1
-            except:
+            except Exception:
                 print(f"failed to write {f[1:]}")
 
         # close the table etc.

@@ -102,6 +102,22 @@ music/
     Yesterday.chopro      ← This one will be shown
 ```
 
+### Control Song Order
+
+Create a file named `songorder.txt` inside your music folder to specify the table order:
+
+```
+# songorder.txt — one song title per line, # lines are comments
+Amazing Grace
+Yesterday
+Let It Be
+```
+
+- Songs listed here appear at the top of the table in that order.
+- Any songs found in the folder but not listed are appended after, sorted normally.
+- Title matching ignores leading articles (A / An / The), punctuation, and case.
+- If the file doesn't exist, the catalog is sorted by `--SortBy` as usual.
+
 ### Add Metadata to ChordPro Files
 
 Improve search results by embedding metadata directly in your `.chopro` charts:
@@ -151,7 +167,8 @@ my-music-library/
   │   ├── Amazing Grace.chopro
   │   ├── Amazing Grace.pdf
   │   └── This Land.chopro
-  └── HTMLheader.txt (optional custom header)
+  ├── songorder.txt        (optional custom sort order)
+  └── HTMLheader.txt       (optional custom header)
 ```
 
 Run from the parent folder:

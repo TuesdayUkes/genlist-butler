@@ -14,7 +14,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from genlist_butler.cli import (  # pylint: disable=wrong-import-position
+from genlist_butler.cli import (  # noqa: E402  pylint: disable=wrong-import-position
     _sanitize_lyric_text,
     extract_chopro_metadata,
     main as cli_main,
