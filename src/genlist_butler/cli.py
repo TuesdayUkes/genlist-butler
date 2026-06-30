@@ -876,11 +876,44 @@ def main():
         .toLowerCase();
     }
 
+        function slugifySongParam(input) {
+            const normalized = normalizeSearchText(input);
+            if (!normalized) {
+                return '';
+            }
+
+            return normalized
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+
+        function syncSongQueryParam() {
+            const songSlug = slugifySongParam(searchInput.value);
+            const currentUrl = new URL(window.location.href);
+            const currentSong = currentUrl.searchParams.get('song') || '';
+
+            if (songSlug) {
+                if (currentSong === songSlug) {
+                    return;
+                }
+                currentUrl.searchParams.set('song', songSlug);
+            } else {
+                if (!currentSong) {
+                    return;
+                }
+                currentUrl.searchParams.delete('song');
+            }
+
+            const newUrl = currentUrl.pathname + currentUrl.search + currentUrl.hash;
+            window.history.replaceState({}, '', newUrl);
+        }
+
     // Set total count
     const rowList = Array.from(rows);
     totalCountSpan.textContent = rowList.length;
     const rowCache = rowList.map((row, index) => {
         const titleCell = row.cells[1];
+        const titleRaw = titleCell ? titleCell.textContent.trim() : '';
         return {
             row,
             originalIndex: index,
@@ -888,7 +921,9 @@ def main():
             rowText: normalizeSearchText(row.textContent),
             metadataText: normalizeSearchText(row.dataset.metadata || ''),
             lyricText: normalizeSearchText(row.dataset.lyrics || ''),
-            titleText: titleCell ? normalizeSearchText(titleCell.textContent) : ''
+            titleText: titleCell ? normalizeSearchText(titleCell.textContent) : '',
+            titleRaw,
+            titleSlug: slugifySongParam(titleRaw)
         };
     });
 
@@ -932,6 +967,7 @@ def main():
     }
 
     function filterRows() {
+        syncSongQueryParam();
         const query = normalizeSearchText(searchInput.value);
         const easyOnly = easyFilter.checked;
         const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
@@ -1029,6 +1065,17 @@ def main():
             }
         });
     });
+
+    const songParam = new URLSearchParams(window.location.search).get('song') || '';
+    const requestedSongSlug = slugifySongParam(songParam);
+    if (requestedSongSlug) {
+        const slugMatch = rowCache.find(item => item.titleSlug === requestedSongSlug);
+        if (slugMatch && slugMatch.titleRaw) {
+            searchInput.value = slugMatch.titleRaw;
+        } else {
+            searchInput.value = songParam.replace(/-/g, ' ');
+        }
+    }
 
     // Initialize with default filtering based on server-side filter method
     // Hide additional versions by default unless filter method was "none"
