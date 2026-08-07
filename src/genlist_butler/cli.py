@@ -856,6 +856,10 @@ def main():
       <input type="checkbox" id="lyricSearchToggle">
       <label for="lyricSearchToggle">📝 Include lyric search (may be slower)</label>
     </div>
+        <div class="filter-checkbox table-sort-checkbox">
+            <input type="checkbox" id="sortByDateToggle">
+            <label for="sortByDateToggle">Sort by date</label>
+        </div>
     <div id="searchStats" class="search-stats" style="display: none;">
         Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> songs
     </div>
@@ -1069,16 +1073,12 @@ def main():
             let matches = [];
             if (query) {
                 matches = fuse.search(query).map(result => ({
-                    row: result.item.row,
-                    originalIndex: result.item.originalIndex,
-                    isEasy: result.item.isEasy,
+                    ...result.item,
                     score: result.score ?? 0
                 }));
             } else {
                 matches = rowCache.map(item => ({
-                    row: item.row,
-                    originalIndex: item.originalIndex,
-                    isEasy: item.isEasy,
+                    ...item,
                     score: 0
                 }));
             }
@@ -1307,17 +1307,6 @@ def main():
         if intro:
             htmlOutput.writelines(introduction)
         htmlOutput.writelines(searchControls)
-        if sortBy == "userSelect":
-            htmlOutput.write(
-                """
-<div class="table-sort-controls">
-  <div class="filter-checkbox table-sort-checkbox">
-      <input type="checkbox" id="sortByDateToggle">
-      <label for="sortByDateToggle">Sort by date</label>
-  </div>
-</div>
-"""
-            )
         tableClass = 'class="with-line-numbers"' if showLineNumbers else 'class="no-line-numbers"'
         htmlOutput.write(f'<table id="dataTable" {tableClass}>')
         htmlOutput.write("<thead>\n")
