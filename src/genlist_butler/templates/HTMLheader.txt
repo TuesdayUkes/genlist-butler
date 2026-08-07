@@ -264,6 +264,24 @@ h2 {
   text-align: center;
 }
 
+/* Table sort controls */
+.table-sort-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 1rem 0;
+}
+
+.table-sort-controls .filter-checkbox {
+  margin-top: 0;
+}
+
+.date-sort-label {
+  display: block;
+  margin-top: 0.25rem;
+  color: #718096;
+  font-weight: normal;
+}
+
 /* Checkbox styling for consistent sizing */
 .filter-checkbox input[type="checkbox"] {
   width: 18px;

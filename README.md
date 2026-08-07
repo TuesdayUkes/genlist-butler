@@ -78,7 +78,7 @@ genlist ./music index.html --genPDF
   - `none`: Show all files
   - `hidden`: Hide files with `.hide` extension
   - `timestamp`: Show only newest versions based on git history
-- `--SortBy [title|date]` - Sort order when no `songorder.txt` is present: `title` (default, alphabetical) or `date` (newest-first by git commit date)
+- `--SortBy [title|date|userSelect]` - Sort order when no `songorder.txt` is present: `title` (default, alphabetical), `date` (newest-first by git commit date), or `userSelect` (start alphabetical and add a table checkbox to switch to date order)
 - `--intro / --no-intro` - Include/exclude introduction section (default: include)
 - `--genPDF / --no-genPDF` - Generate PDFs from ChordPro files (default: no)
 - `--forcePDF / --no-forcePDF` - Regenerate all PDFs even if they exist (default: no)

@@ -303,6 +303,24 @@ h2 {
   text-align: center;
 }
 
+/* Table sort controls */
+.table-sort-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0 0 1rem 0;
+}
+
+.table-sort-controls .filter-checkbox {
+    margin-top: 0;
+}
+
+.date-sort-label {
+    display: block;
+    margin-top: 0.25rem;
+    color: #718096;
+    font-weight: normal;
+}
+
 /* Checkbox styling for consistent sizing */
 .filter-checkbox input[type="checkbox"] {
   width: 18px;
@@ -535,9 +553,12 @@ def main():
     )
     parser.add_argument(
         "--SortBy",
-        choices=["date", "title"],
+        choices=["date", "title", "userSelect"],
         default="title",
-        help="Sort order: 'title' (default, alphabetical) or 'date' (newest-first by commit date)",
+        help=(
+            "Sort order: 'title' (default, alphabetical), 'date' (newest-first by commit date),"
+            " or 'userSelect' (start alphabetical and let the page switch to date ordering)"
+        ),
     )
     args = parser.parse_args()
 
@@ -849,6 +870,7 @@ def main():
     const searchInput = document.getElementById('searchInput');
     const easyFilter = document.getElementById('easyFilter');
     const lyricSearchToggle = document.getElementById('lyricSearchToggle');
+    const sortByDateToggle = document.getElementById('sortByDateToggle');
     const table = document.getElementById('dataTable');
     const tbody = table.tBodies[0];
     const rows = tbody.getElementsByTagName('tr');
@@ -908,6 +930,58 @@ def main():
             window.history.replaceState({}, '', newUrl);
         }
 
+        function normalizeSortTitle(input) {
+            if (!input) {
+                return '';
+            }
+
+            let normalized = input;
+            if (typeof normalized.normalize === 'function') {
+                normalized = normalized.normalize('NFKD');
+            }
+
+            normalized = normalized.replace(/\u00a0/g, ' ').trim();
+            const titleWords = normalized.split(/\\s+/);
+            if (titleWords.length && ['a', 'an', 'the'].includes(titleWords[0].toLowerCase())) {
+                normalized = titleWords.slice(1).join(' ');
+            }
+
+            return normalized.replace(/[',]/g, '').toLowerCase();
+        }
+
+        function getCurrentSortMode() {
+            if (sortByDateToggle) {
+                return sortByDateToggle.checked ? 'date' : 'alphabetical';
+            }
+
+            return '""" + ("date" if sortBy == "date" else "alphabetical") + """';
+        }
+
+        function compareRows(left, right, sortMode) {
+            if (sortMode === 'date') {
+                const dateDelta = (right.sortDate || 0) - (left.sortDate || 0);
+                if (dateDelta !== 0) {
+                    return dateDelta;
+                }
+            } else {
+                if (left.sortTitle < right.sortTitle) {
+                    return -1;
+                }
+                if (left.sortTitle > right.sortTitle) {
+                    return 1;
+                }
+            }
+
+            return left.originalIndex - right.originalIndex;
+        }
+
+        function updateDateLabelVisibility() {
+            const showDateLabels = getCurrentSortMode() === 'date';
+            document.querySelectorAll('.date-sort-label').forEach(label => {
+                label.style.display = showDateLabels ? '' : 'none';
+            });
+        }
+
     // Set total count
     const rowList = Array.from(rows);
     totalCountSpan.textContent = rowList.length;
@@ -922,6 +996,8 @@ def main():
             metadataText: normalizeSearchText(row.dataset.metadata || ''),
             lyricText: normalizeSearchText(row.dataset.lyrics || ''),
             titleText: titleCell ? normalizeSearchText(titleCell.textContent) : '',
+            sortTitle: titleCell ? normalizeSortTitle(titleCell.textContent) : '',
+            sortDate: Number(row.dataset.sortDate || 0),
             titleRaw,
             titleSlug: slugifySongParam(titleRaw)
         };
@@ -971,6 +1047,7 @@ def main():
         const query = normalizeSearchText(searchInput.value);
         const easyOnly = easyFilter.checked;
         const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
+        const sortMode = getCurrentSortMode();
         let visibleCount = 0;
 
         // Add loading effect
@@ -1018,22 +1095,22 @@ def main():
 
             visibleCount = visibleRows.length;
 
+            visibleRows.sort((a, b) => compareRows(a, b, sortMode));
+
             rowCache.forEach(item => {
                 if (visibleSet.has(item.row)) {
                     return;
                 }
                 item.row.style.display = 'none';
-                hiddenRows.push({ row: item.row, originalIndex: item.originalIndex });
+                hiddenRows.push(item);
             });
 
-            if (!query) {
-                visibleRows.sort((a, b) => a.originalIndex - b.originalIndex);
-            }
-
-            hiddenRows.sort((a, b) => a.originalIndex - b.originalIndex);
+            hiddenRows.sort((a, b) => compareRows(a, b, sortMode));
 
             visibleRows.forEach(item => tbody.appendChild(item.row));
             hiddenRows.forEach(item => tbody.appendChild(item.row));
+
+            updateDateLabelVisibility();
 
             updateSearchStats(visibleCount);
             table.classList.remove('table-loading');
@@ -1050,6 +1127,9 @@ def main():
     easyFilter.addEventListener('change', filterRows);
     if (lyricSearchToggle) {
         lyricSearchToggle.addEventListener('change', filterRows);
+    }
+    if (sortByDateToggle) {
+        sortByDateToggle.addEventListener('change', filterRows);
     }
 
     versionToggleButtons.forEach(button => {
@@ -1089,6 +1169,8 @@ def main():
             link.style.display = 'none';
         });
     }
+
+    updateDateLabelVisibility();
 
     // Update initial stats
     filterRows();
@@ -1172,7 +1254,7 @@ def main():
     allTitles = list(titleDict.values())
 
     downloadExtensions = [".cho", ".chopro"]
-    if sortBy == "date":
+    if sortBy in ("date", "userSelect"):
         allSongFiles = [
             f for g in allTitles for f in g[1:] if ext(f).lower() not in markerExtensions
         ]
@@ -1188,7 +1270,10 @@ def main():
             return max(ts_list) if ts_list else 0
 
         titleGroupTimestamps = {dictCompare(g[0]): maxTimestampForGroup(g) for g in allTitles}
-        sortedTitles = sorted(allTitles, key=maxTimestampForGroup, reverse=True)
+        if sortBy == "date":
+            sortedTitles = sorted(allTitles, key=maxTimestampForGroup, reverse=True)
+        else:
+            sortedTitles = sorted(allTitles, key=(lambda e: dictCompare(e[0]).casefold()))
     else:
         titleGroupTimestamps = {}
         sortedTitles = sorted(allTitles, key=(lambda e: dictCompare(e[0]).casefold()))
@@ -1222,6 +1307,17 @@ def main():
         if intro:
             htmlOutput.writelines(introduction)
         htmlOutput.writelines(searchControls)
+        if sortBy == "userSelect":
+            htmlOutput.write(
+                """
+<div class="table-sort-controls">
+  <div class="filter-checkbox table-sort-checkbox">
+      <input type="checkbox" id="sortByDateToggle">
+      <label for="sortByDateToggle">Sort by date</label>
+  </div>
+</div>
+"""
+            )
         tableClass = 'class="with-line-numbers"' if showLineNumbers else 'class="no-line-numbers"'
         htmlOutput.write(f'<table id="dataTable" {tableClass}>')
         htmlOutput.write("<thead>\n")
@@ -1265,6 +1361,12 @@ def main():
                 if cssClasses:
                     attributeParts.append(f'class="{" ".join(cssClasses)}"')
 
+                if sortBy in ("date", "userSelect"):
+                    titleTimestamp = titleGroupTimestamps.get(dictCompare(f[0]), 0)
+                    attributeParts.append(f'data-sort-date="{titleTimestamp}"')
+                else:
+                    titleTimestamp = 0
+
                 if titleMetadata:
                     metadataTokens = []
                     if titleMetadata["keywords"]:
@@ -1291,15 +1393,15 @@ def main():
                 # song title column + optional per-row version toggle
                 htmlOutput.write("  <td>")
                 htmlOutput.write(f"{f[0]}")
-                if sortBy == "date":
-                    ts = titleGroupTimestamps.get(dictCompare(f[0]), 0)
-                    if ts:
-                        dt = datetime.fromtimestamp(ts)
-                        date_str = dt.strftime("%m/%d/%Y")
-                        htmlOutput.write(
-                            f'<br><small style="color: #718096; font-weight: normal;">'
-                            f"updated {date_str}</small>"
-                        )
+                if sortBy in ("date", "userSelect") and titleTimestamp:
+                    dt = datetime.fromtimestamp(titleTimestamp)
+                    date_str = dt.strftime("%m/%d/%Y")
+                    dateLabelStyle = "" if sortBy == "date" else ' style="display: none;"'
+                    htmlOutput.write(
+                        f'<span class="date-sort-label"{dateLabelStyle}>'
+                        f'<br><small style="color: #718096; font-weight: normal;">'
+                        f"updated {date_str}</small></span>"
+                    )
                 if hasAdditionalVersions:
                     htmlOutput.write(
                         ' <button type="button" class="show-all-versions-btn"'

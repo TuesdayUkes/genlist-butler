@@ -116,7 +116,7 @@ Let It Be
 - Songs listed here appear at the top of the table in that order.
 - Any songs found in the folder but not listed are appended after, sorted normally.
 - Title matching ignores leading articles (A / An / The), punctuation, and case.
-- If the file doesn't exist, the catalog is sorted by `--SortBy` as usual.
+- If the file doesn't exist, the catalog is sorted by `--SortBy` as usual. Use `userSelect` if you want the generated page to start alphabetical and let readers switch to date order with a checkbox above the table.
 
 ### Add Metadata to ChordPro Files
 

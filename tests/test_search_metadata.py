@@ -349,3 +349,39 @@ def test_javascript_search_only_checks_title_when_lyrics_disabled(
     # Verify both code paths exist
     assert "rowText.includes(searchFilter)" in html_output  # Full search path
     assert "titleText.includes(searchFilter)" in html_output  # Title-only search path
+
+
+def test_cli_user_select_sort_adds_table_toggle_and_date_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The userSelect sort mode should emit a date toggle and sortable row metadata."""
+
+    music_dir = tmp_path / "music"
+    music_dir.mkdir()
+
+    (music_dir / "Zebra Song.chopro").write_text("{title: Zebra Song}\nLyrics", encoding="utf-8")
+    (music_dir / "Apple Song.chopro").write_text("{title: Apple Song}\nLyrics", encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+        "--SortBy",
+        "userSelect",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli_main()
+
+    html_output = output_file.read_text(encoding="utf-8")
+
+    assert 'id="sortByDateToggle"' in html_output
+    assert 'class="date-sort-label"' in html_output
+    assert 'data-sort-date="' in html_output
+    assert html_output.find("Apple Song") < html_output.find("Zebra Song")
