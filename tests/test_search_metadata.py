@@ -385,3 +385,74 @@ def test_cli_user_select_sort_adds_table_toggle_and_date_metadata(
     assert 'class="date-sort-label"' in html_output
     assert 'data-sort-date="' in html_output
     assert html_output.find("Apple Song") < html_output.find("Zebra Song")
+
+
+@pytest.mark.parametrize("sort_mode", ["title", "date"])
+def test_cli_non_user_select_sort_hides_table_toggle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sort_mode: str
+) -> None:
+    """The date sort toggle should only render for userSelect mode."""
+
+    music_dir = tmp_path / "music"
+    music_dir.mkdir()
+
+    (music_dir / "Zebra Song.chopro").write_text("{title: Zebra Song}\nLyrics", encoding="utf-8")
+    (music_dir / "Apple Song.chopro").write_text("{title: Apple Song}\nLyrics", encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+        "--SortBy",
+        sort_mode,
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli_main()
+
+    html_output = output_file.read_text(encoding="utf-8")
+
+    assert 'id="sortByDateToggle"' not in html_output
+
+
+def test_cli_songorder_preserves_row_order_in_client_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When songorder.txt exists, the generated JS should keep server row order by default."""
+
+    music_dir = tmp_path / "music"
+    music_dir.mkdir()
+
+    (music_dir / "Zebra Song.chopro").write_text("{title: Zebra Song}\nLyrics", encoding="utf-8")
+    (music_dir / "Apple Song.chopro").write_text("{title: Apple Song}\nLyrics", encoding="utf-8")
+    (music_dir / "Monkey Song.chopro").write_text("{title: Monkey Song}\nLyrics", encoding="utf-8")
+    (music_dir / "songorder.txt").write_text("Monkey Song\nZebra Song\n", encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+        "--SortBy",
+        "title",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    cli_main()
+
+    html_output = output_file.read_text(encoding="utf-8")
+
+    assert "const hasSongOrder = true;" in html_output
+    assert "if (hasSongOrder && !(sortByDateToggle && sortByDateToggle.checked))" in html_output
+    assert html_output.find("Monkey Song") < html_output.find("Zebra Song")

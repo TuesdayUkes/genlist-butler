@@ -574,6 +574,8 @@ def main():
     showLineNumbers = args.line_numbers
     includeHtml = args.html
     sortBy = args.SortBy
+    songOrderFile = os.path.join(musicFolder, "songorder.txt")
+    hasSongOrder = os.path.exists(songOrderFile)
 
     now = datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
@@ -842,7 +844,14 @@ def main():
     </div>
   """
 
-    searchControls = """
+    sortByDateToggleControl = """
+    <div class="filter-checkbox table-sort-checkbox">
+        <input type="checkbox" id="sortByDateToggle">
+        <label for="sortByDateToggle">Sort by date</label>
+    </div>
+""" if sortBy == "userSelect" else ""
+
+    searchControls = f"""
 <div class="search-controls">
     <h2>Search & Filter</h2>
     <input type="text" id="searchInput"
@@ -856,10 +865,7 @@ def main():
       <input type="checkbox" id="lyricSearchToggle">
       <label for="lyricSearchToggle">📝 Include lyric search (may be slower)</label>
     </div>
-        <div class="filter-checkbox table-sort-checkbox">
-            <input type="checkbox" id="sortByDateToggle">
-            <label for="sortByDateToggle">Sort by date</label>
-        </div>
+    {sortByDateToggleControl}
     <div id="searchStats" class="search-stats" style="display: none;">
         Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> songs
     </div>
@@ -875,6 +881,9 @@ def main():
     const easyFilter = document.getElementById('easyFilter');
     const lyricSearchToggle = document.getElementById('lyricSearchToggle');
     const sortByDateToggle = document.getElementById('sortByDateToggle');
+    const hasSongOrder = """
+        + ("true" if hasSongOrder else "false")
+        + """;
     const table = document.getElementById('dataTable');
     const tbody = table.tBodies[0];
     const rows = tbody.getElementsByTagName('tr');
@@ -962,6 +971,12 @@ def main():
         }
 
         function compareRows(left, right, sortMode) {
+            // Keep the server-rendered row order from songorder.txt unless the
+            // user explicitly chooses date sorting in userSelect mode.
+            if (hasSongOrder && !(sortByDateToggle && sortByDateToggle.checked)) {
+                return left.originalIndex - right.originalIndex;
+            }
+
             if (sortMode === 'date') {
                 const dateDelta = (right.sortDate || 0) - (left.sortDate || 0);
                 if (dateDelta !== 0) {
@@ -1279,8 +1294,7 @@ def main():
         sortedTitles = sorted(allTitles, key=(lambda e: dictCompare(e[0]).casefold()))
 
     # Apply songorder.txt ordering if the file exists in musicFolder
-    songOrderFile = os.path.join(musicFolder, "songorder.txt")
-    if os.path.exists(songOrderFile):
+    if hasSongOrder:
         print(f"Using song order from {songOrderFile}", file=sys.stderr)
         with open(songOrderFile, "r", encoding="utf-8") as f:
             orderedTitles = [
