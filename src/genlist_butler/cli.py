@@ -970,7 +970,14 @@ def main():
             return '""" + ("date" if sortBy == "date" else "alphabetical") + """';
         }
 
-        function compareRows(left, right, sortMode) {
+        function compareRows(left, right, sortMode, queryActive = false) {
+            if (queryActive) {
+                const scoreDelta = (right.score ?? 0) - (left.score ?? 0);
+                if (scoreDelta !== 0) {
+                    return scoreDelta;
+                }
+            }
+
             // Keep the server-rendered row order from songorder.txt unless the
             // user explicitly chooses date sorting in userSelect mode.
             if (hasSongOrder && !(sortByDateToggle && sortByDateToggle.checked)) {
@@ -1067,6 +1074,7 @@ def main():
         const easyOnly = easyFilter.checked;
         const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
         const sortMode = getCurrentSortMode();
+        const queryActive = Boolean(query);
         let visibleCount = 0;
 
         // Add loading effect
@@ -1110,7 +1118,7 @@ def main():
 
             visibleCount = visibleRows.length;
 
-            visibleRows.sort((a, b) => compareRows(a, b, sortMode));
+            visibleRows.sort((a, b) => compareRows(a, b, sortMode, queryActive));
 
             rowCache.forEach(item => {
                 if (visibleSet.has(item.row)) {
@@ -1120,7 +1128,7 @@ def main():
                 hiddenRows.push(item);
             });
 
-            hiddenRows.sort((a, b) => compareRows(a, b, sortMode));
+            hiddenRows.sort((a, b) => compareRows(a, b, sortMode, queryActive));
 
             visibleRows.forEach(item => tbody.appendChild(item.row));
             hiddenRows.forEach(item => tbody.appendChild(item.row));
