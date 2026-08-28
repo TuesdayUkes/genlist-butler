@@ -386,6 +386,7 @@ def test_cli_user_select_sort_adds_table_toggle_and_date_metadata(
     assert 'data-sort-date="' in html_output
     assert 'const queryActive = Boolean(query);' in html_output
     assert 'if (queryActive) {' in html_output
+    assert 'const scoreDelta = (left.score ?? 0) - (right.score ?? 0);' in html_output
     assert html_output.find("Apple Song") < html_output.find("Zebra Song")
 
 

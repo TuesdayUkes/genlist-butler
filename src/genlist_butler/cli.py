@@ -972,7 +972,7 @@ def main():
 
         function compareRows(left, right, sortMode, queryActive = false) {
             if (queryActive) {
-                const scoreDelta = (right.score ?? 0) - (left.score ?? 0);
+                const scoreDelta = (left.score ?? 0) - (right.score ?? 0);
                 if (scoreDelta !== 0) {
                     return scoreDelta;
                 }
