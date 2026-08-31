@@ -351,6 +351,84 @@ def test_javascript_search_only_checks_title_when_lyrics_disabled(
     assert "titleText.includes(searchFilter)" in html_output  # Title-only search path
 
 
+def test_cli_onlyeasy_flag_controls_easy_filter_checkbox(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The easy-only filter should be on by default but can be hidden via --no-onlyeasy."""
+
+    music_dir = tmp_path / "music"
+    music_dir.mkdir()
+    (music_dir / "Easy Song.chopro").write_text("{title: Easy Song}\nLyrics", encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli_main()
+    assert 'id="easyFilter"' in output_file.read_text(encoding="utf-8")
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+        "--no-onlyeasy",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli_main()
+    assert 'id="easyFilter"' not in output_file.read_text(encoding="utf-8")
+
+
+def test_cli_includelyrics_flag_controls_lyric_filter_checkbox(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The lyric-search checkbox should be present by default but can be hidden via --no-includelyrics."""
+
+    music_dir = tmp_path / "music"
+    music_dir.mkdir()
+    (music_dir / "Song.chopro").write_text("{title: Song}\nLyrics", encoding="utf-8")
+
+    output_file = tmp_path / "catalog.html"
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli_main()
+    assert 'id="lyricSearchToggle"' in output_file.read_text(encoding="utf-8")
+
+    argv = [
+        "genlist",
+        str(music_dir),
+        str(output_file),
+        "--no-intro",
+        "--no-line-numbers",
+        "--filter",
+        "none",
+        "--no-includelyrics",
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+    cli_main()
+    assert 'id="lyricSearchToggle"' not in output_file.read_text(encoding="utf-8")
+
+
 def test_cli_user_select_sort_adds_table_toggle_and_date_metadata(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

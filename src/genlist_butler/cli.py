@@ -552,6 +552,18 @@ def main():
         help="Include/exclude .html files in the catalog (default: include)",
     )
     parser.add_argument(
+        "--onlyeasy",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include/exclude the easy-song filter checkbox (default: include)",
+    )
+    parser.add_argument(
+        "--includelyrics",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Include/exclude the lyric-search checkbox (default: include)",
+    )
+    parser.add_argument(
         "--SortBy",
         choices=["date", "title", "userSelect"],
         default="title",
@@ -573,6 +585,8 @@ def main():
     filterMethod = args.filter
     showLineNumbers = args.line_numbers
     includeHtml = args.html
+    showEasyFilter = args.onlyeasy
+    showLyricFilter = args.includelyrics
     sortBy = args.SortBy
     songOrderFile = os.path.join(musicFolder, "songorder.txt")
     hasSongOrder = os.path.exists(songOrderFile)
@@ -851,20 +865,28 @@ def main():
     </div>
 """ if sortBy == "userSelect" else ""
 
+    easyFilterControl = f"""
+    <div class="filter-checkbox">
+        <input type="checkbox" id="easyFilter">
+        <label for="easyFilter">🎵 Show only easy songs (perfect for beginners!)</label>
+    </div>
+""" if showEasyFilter else ""
+
+    lyricFilterControl = f"""
+    <div class="filter-checkbox">
+      <input type="checkbox" id="lyricSearchToggle">
+      <label for="lyricSearchToggle">📝 Include lyric search (may be slower)</label>
+    </div>
+""" if showLyricFilter else ""
+
     searchControls = f"""
 <div class="search-controls">
     <h2>Search & Filter</h2>
     <input type="text" id="searchInput"
       placeholder="🔍 Search songs by title, keyword, or lyrics..."
       autocorrect="off" autocapitalize="off" spellcheck="false">
-    <div class="filter-checkbox">
-        <input type="checkbox" id="easyFilter">
-        <label for="easyFilter">🎵 Show only easy songs (perfect for beginners!)</label>
-    </div>
-    <div class="filter-checkbox">
-      <input type="checkbox" id="lyricSearchToggle">
-      <label for="lyricSearchToggle">📝 Include lyric search (may be slower)</label>
-    </div>
+    {easyFilterControl}
+    {lyricFilterControl}
     {sortByDateToggleControl}
     <div id="searchStats" class="search-stats" style="display: none;">
         Showing <span id="visibleCount">0</span> of <span id="totalCount">0</span> songs
@@ -1054,7 +1076,8 @@ def main():
 
     function updateSearchStats(visibleCount) {
       visibleCountSpan.textContent = visibleCount;
-      const showStats = searchInput.value || easyFilter.checked
+      const easyFilterActive = easyFilter ? easyFilter.checked : false;
+      const showStats = searchInput.value || easyFilterActive
         || (lyricSearchToggle && !lyricSearchToggle.checked);
       searchStats.style.display = showStats ? 'block' : 'none';
     }
@@ -1071,7 +1094,7 @@ def main():
     function filterRows() {
         syncSongQueryParam();
         const query = normalizeSearchText(searchInput.value);
-        const easyOnly = easyFilter.checked;
+        const easyOnly = easyFilter ? easyFilter.checked : false;
         const lyricSearchEnabled = lyricSearchToggle ? lyricSearchToggle.checked : true;
         const sortMode = getCurrentSortMode();
         const queryActive = Boolean(query);
@@ -1147,7 +1170,9 @@ def main():
         searchTimeout = setTimeout(filterRows, 300);
     });
 
-    easyFilter.addEventListener('change', filterRows);
+    if (easyFilter) {
+        easyFilter.addEventListener('change', filterRows);
+    }
     if (lyricSearchToggle) {
         lyricSearchToggle.addEventListener('change', filterRows);
     }
